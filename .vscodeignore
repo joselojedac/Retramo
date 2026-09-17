@@ -1,0 +1,16 @@
+.vscode/**
+.vscode-test/**
+.vscode-test.mjs
+.github/**
+test/**
+out/test/**
+out/**/*.map
+src/**
+!src/panel/returnPanel.html
+node_modules/**
+.gitignore
+eslint.config.mjs
+vitest.config.ts
+tsconfig.json
+AGENTS.md
+**/*.vsix

@@ -1,0 +1,130 @@
+{
+  "name": "reentry",
+  "displayName": "Reentry",
+  "description": "Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés. Hecho para gente que pierde el hilo con cada interrupción.",
+  "version": "0.1.0",
+  "publisher": "joselojedac",
+  "license": "SEE LICENSE IN README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joselojedac/Reentry"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "adhd",
+    "context",
+    "focus",
+    "session",
+    "resume"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "reentry.leave",
+        "title": "Me fui",
+        "category": "Reentry"
+      },
+      {
+        "command": "reentry.return",
+        "title": "Volví",
+        "category": "Reentry"
+      },
+      {
+        "command": "reentry.history",
+        "title": "Historial",
+        "category": "Reentry"
+      },
+      {
+        "command": "reentry.openData",
+        "title": "Abrir carpeta de datos",
+        "category": "Reentry"
+      },
+      {
+        "command": "reentry.setApiKey",
+        "title": "Configurar clave de API para resúmenes",
+        "category": "Reentry"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "reentry.leave",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l"
+      },
+      {
+        "command": "reentry.return",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r"
+      }
+    ],
+    "configuration": {
+      "title": "Reentry",
+      "properties": {
+        "reentry.idleMinutes": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "description": "Minutos sin actividad antes de guardar una sesión automáticamente. Mínimo 5."
+        },
+        "reentry.captureSelection": {
+          "type": "boolean",
+          "default": false,
+          "description": "Guardar el texto seleccionado en el editor activo (máximo 200 caracteres). Apagado por defecto."
+        },
+        "reentry.summary.provider": {
+          "type": "string",
+          "enum": [
+            "none",
+            "openai",
+            "anthropic",
+            "ollama"
+          ],
+          "default": "none",
+          "description": "Proveedor para el resumen con IA. Con \"none\" no se envía nada a ningún lado."
+        },
+        "reentry.summary.ollamaEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Endpoint de Ollama (o compatible) para el resumen local."
+        },
+        "reentry.telemetry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src test",
+    "test:unit": "vitest run",
+    "test": "npm run compile && vscode-test",
+    "check": "npm run compile && npm run lint && npm run test:unit",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.0.0",
+    "eslint": "^9.0.0",
+    "mocha": "^11.0.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}

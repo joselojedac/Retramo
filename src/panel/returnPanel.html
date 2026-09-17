@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src {{cspSource}} 'nonce-{{nonce}}'; script-src 'nonce-{{nonce}}';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volví</title>
+  <style nonce="{{nonce}}">
+    body {
+      font-family: var(--vscode-font-family);
+      font-size: var(--vscode-font-size);
+      color: var(--vscode-foreground);
+      padding: 0 20px 24px;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.15em; font-weight: 600; margin: 20px 0 12px; }
+    h2 { font-size: 0.85em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+         opacity: 0.7; margin: 20px 0 6px; }
+    .note { font-size: 1.4em; line-height: 1.35; margin: 12px 0 4px; white-space: pre-wrap; }
+    .summary { white-space: pre-wrap; margin: 0; }
+    .muted { opacity: 0.7; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { margin: 2px 0; }
+    a { color: var(--vscode-textLink-foreground); text-decoration: none; cursor: pointer; }
+    a:hover { text-decoration: underline; }
+    code { font-family: var(--vscode-editor-font-family); font-size: 0.95em; }
+    details summary { cursor: pointer; }
+    details summary h2 { display: inline; }
+    footer { margin-top: 28px; font-size: 0.9em; opacity: 0.7; }
+    footer a { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  {{body}}
+  <script nonce="{{nonce}}">
+    (function () {
+      const vscode = acquireVsCodeApi();
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("a[data-action]");
+        if (!target) { return; }
+        event.preventDefault();
+        const action = target.dataset.action;
+        if (action === "open") {
+          vscode.postMessage({
+            type: "openFile",
+            path: target.dataset.path,
+            line: target.dataset.line ? Number(target.dataset.line) : undefined,
+          });
+        } else if (action === "history") {
+          vscode.postMessage({ type: "history" });
+        }
+      });
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+        if (message && message.type === "summary") {
+          const block = document.getElementById("summary");
+          if (!block) { return; }
+          if (message.text) {
+            block.hidden = false;
+            block.querySelector(".summary").textContent = message.text;
+            block.querySelector(".summary").classList.remove("muted");
+          } else if (message.status === "generating") {
+            block.hidden = false;
+            block.querySelector(".summary").textContent = "generando...";
+            block.querySelector(".summary").classList.add("muted");
+          } else {
+            block.hidden = true;
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
