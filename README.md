@@ -90,7 +90,7 @@ Si decís que sí, una vez por semana se envía **exactamente esto** y nada más
 
 Podés cambiarlo cuando quieras con `reentry.telemetry`. Se respeta también `telemetry.telemetryLevel` de VS Code: si lo tenés en `off`, no se envía nada aunque hayas dicho que sí.
 
-> En esta versión el endpoint de telemetría todavía no está definido (la constante `TELEMETRY_ENDPOINT` está vacía), así que en la práctica solo se cuenta localmente y no se envía nada.
+Se envía por `POST` a `https://reentry-telemetry.netlify.app/ping`. El servidor guarda solo esos tres campos, agrupados por semana; no guarda tu IP ni ningún otro dato. Su código está en [`server/telemetry/`](server/telemetry/).
 
 ## Configuración
 

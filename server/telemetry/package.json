@@ -1,0 +1,12 @@
+{
+  "name": "reentry-telemetry",
+  "private": true,
+  "type": "module",
+  "description": "Recibe el conteo semanal opt-in de la extensión Reentry. Ver AGENTS.md §10.",
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^4.0.0"
+  }
+}

@@ -13,10 +13,9 @@ import type { Logger } from "../log";
  * aunque el usuario haya dicho que sí.
  *
  * El endpoint es una constante para no sumar opciones de configuración
- * (AGENTS.md §11). Mientras esté vacío, sólo se cuenta localmente y no se
- * envía nada.
+ * (AGENTS.md §11). El servidor está en `server/telemetry/`.
  */
-export const TELEMETRY_ENDPOINT = "";
+export const TELEMETRY_ENDPOINT = "https://reentry-telemetry.netlify.app/ping";
 
 const KEY_ASKED = "reentry.telemetry.asked";
 const KEY_INSTALL_ID = "reentry.telemetry.installId";
