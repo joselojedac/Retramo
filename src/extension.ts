@@ -13,7 +13,7 @@ import { Telemetry } from "./telemetry/optin";
 let log: Logger;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  const channel = vscode.window.createOutputChannel("Reentry");
+  const channel = vscode.window.createOutputChannel("Retramo");
   context.subscriptions.push(channel);
   log = createLogger(channel);
 
@@ -22,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(terminal);
   const telemetry = new Telemetry(context, log);
 
-  const config = () => vscode.workspace.getConfiguration("reentry");
+  const config = () => vscode.workspace.getConfiguration("retramo");
 
   // --- Captura -------------------------------------------------------------
 
@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!folder) {
       log.warn("leave: no hay carpeta abierta, no se guarda sesión");
       if (trigger === "manual") {
-        vscode.window.setStatusBarMessage("Reentry: abrí una carpeta para guardar una sesión", 4000);
+        vscode.window.setStatusBarMessage("Retramo: abrí una carpeta para guardar una sesión", 4000);
       }
       return undefined;
     }
@@ -76,7 +76,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration("reentry.idleMinutes")) {
+      if (e.affectsConfiguration("retramo.idleMinutes")) {
         idle.restart();
       }
     }),
@@ -113,7 +113,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Comandos ------------------------------------------------------------
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("reentry.leave", async () => {
+    vscode.commands.registerCommand("retramo.leave", async () => {
       const note = await vscode.window.showInputBox({
         placeHolder: "¿Qué estabas haciendo? (opcional)",
         prompt: "Enter vacío para saltear",
@@ -125,27 +125,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       try {
         const session = await leave("manual", note);
         if (session) {
-          vscode.window.setStatusBarMessage("Reentry: sesión guardada", 3000);
+          vscode.window.setStatusBarMessage("Retramo: sesión guardada", 3000);
         }
       } catch (error) {
         log.error("leave: no se pudo guardar la sesión", error);
-        vscode.window.setStatusBarMessage("Reentry: no se pudo guardar (ver log)", 4000);
+        vscode.window.setStatusBarMessage("Retramo: no se pudo guardar (ver log)", 4000);
       }
     }),
 
-    vscode.commands.registerCommand("reentry.return", async () => {
+    vscode.commands.registerCommand("retramo.return", async () => {
       const session = (await store.latest(currentRoot())) ?? (await store.latest());
       if (!session) {
-        vscode.window.setStatusBarMessage("Reentry: todavía no hay sesiones guardadas", 4000);
+        vscode.window.setStatusBarMessage("Retramo: todavía no hay sesiones guardadas", 4000);
         return;
       }
       await showSession(session);
     }),
 
-    vscode.commands.registerCommand("reentry.history", async () => {
+    vscode.commands.registerCommand("retramo.history", async () => {
       const entries = await store.list(HISTORY_LIMIT);
       if (entries.length === 0) {
-        vscode.window.setStatusBarMessage("Reentry: todavía no hay sesiones guardadas", 4000);
+        vscode.window.setStatusBarMessage("Retramo: todavía no hay sesiones guardadas", 4000);
         return;
       }
       const picked = await vscode.window.showQuickPick(
@@ -166,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
 
-    vscode.commands.registerCommand("reentry.openData", async () => {
+    vscode.commands.registerCommand("retramo.openData", async () => {
       await vscode.workspace.fs.createDirectory(context.globalStorageUri);
       const target = vscode.Uri.joinPath(context.globalStorageUri, "index.json");
       try {
@@ -177,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
 
-    vscode.commands.registerCommand("reentry.setApiKey", async () => {
+    vscode.commands.registerCommand("retramo.setApiKey", async () => {
       const kind = configuredProviderKind();
       const provider =
         kind === "openai" || kind === "anthropic"
@@ -198,14 +198,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       if (key.trim() === "") {
         await context.secrets.delete(SECRET_KEYS[provider]);
-        vscode.window.setStatusBarMessage(`Reentry: clave de ${provider} eliminada`, 3000);
+        vscode.window.setStatusBarMessage(`Retramo: clave de ${provider} eliminada`, 3000);
         return;
       }
       await context.secrets.store(SECRET_KEYS[provider], key.trim());
       if (kind === "none") {
         await config().update("summary.provider", provider, vscode.ConfigurationTarget.Global);
       }
-      vscode.window.setStatusBarMessage(`Reentry: clave de ${provider} guardada`, 3000);
+      vscode.window.setStatusBarMessage(`Retramo: clave de ${provider} guardada`, 3000);
     }),
   );
 
@@ -213,7 +213,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   void telemetry.askOnce().then(() => telemetry.flushIfDue());
 
-  log.info("Reentry activa");
+  log.info("Retramo activa");
 }
 
 export function deactivate(): void {

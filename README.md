@@ -1,4 +1,4 @@
-# Reentry
+# Retramo
 
 Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés.
 
@@ -8,8 +8,8 @@ Está hecha para gente con ADHD (o con demasiadas reuniones) que pierde el hilo 
 
 | Acción | Comando | Atajo |
 |---|---|---|
-| **Me fui** | `Reentry: Me fui` | `Ctrl+Alt+L` (`Cmd+Alt+L` en Mac) |
-| **Volví** | `Reentry: Volví` | `Ctrl+Alt+R` (`Cmd+Alt+R` en Mac) |
+| **Me fui** | `Retramo: Me fui` | `Ctrl+Alt+L` (`Cmd+Alt+L` en Mac) |
+| **Volví** | `Retramo: Volví` | `Ctrl+Alt+R` (`Cmd+Alt+R` en Mac) |
 
 **Me fui** captura dónde estabas, te deja escribir una nota de una línea (opcional, Enter vacío para saltear) y guarda la sesión.
 
@@ -23,13 +23,13 @@ Está hecha para gente con ADHD (o con demasiadas reuniones) que pierde el hilo 
 6. Últimos comandos de terminal.
 7. Archivos abiertos (colapsado).
 
-Además, si pasás 20 minutos sin tocar nada, Reentry guarda una sesión sola. Sin avisos, sin popups.
+Además, si pasás 20 minutos sin tocar nada, Retramo guarda una sesión sola. Sin avisos, sin popups.
 
 Comandos secundarios:
 
-- `Reentry: Historial` — elegí entre las últimas 20 sesiones.
-- `Reentry: Abrir carpeta de datos` — abre la carpeta con los JSON, para que veas exactamente qué se guardó.
-- `Reentry: Configurar clave de API para resúmenes` — solo si querés resúmenes con OpenAI o Anthropic.
+- `Retramo: Historial` — elegí entre las últimas 20 sesiones.
+- `Retramo: Abrir carpeta de datos` — abre la carpeta con los JSON, para que veas exactamente qué se guardó.
+- `Retramo: Configurar clave de API para resúmenes` — solo si querés resúmenes con OpenAI o Anthropic.
 
 ## Qué se guarda
 
@@ -59,7 +59,7 @@ Cada sesión es un archivo JSON legible, uno por sesión, en la carpeta de almac
 }
 ```
 
-**Nunca se guarda contenido de archivos ni diffs.** Solo nombres, rutas relativas al workspace y posiciones. La única excepción es la selección del editor activo, recortada a 200 caracteres, y solo si activás `reentry.captureSelection` (viene apagado).
+**Nunca se guarda contenido de archivos ni diffs.** Solo nombres, rutas relativas al workspace y posiciones. La única excepción es la selección del editor activo, recortada a 200 caracteres, y solo si activás `retramo.captureSelection` (viene apagado).
 
 Los comandos de terminal se registran a medida que los ejecutás (VS Code 1.93 o superior), sin su salida. Git se lee a través de la extensión Git integrada, nunca ejecutando `git` por shell.
 
@@ -69,18 +69,18 @@ Nada sale de tu máquina salvo que lo actives explícitamente. Ni telemetría, n
 
 ### 1. Resumen con IA (opcional)
 
-Si configurás `reentry.summary.provider` en `openai`, `anthropic` u `ollama`, al abrir **Volví** se genera un resumen de dos o tres oraciones. El panel muestra primero el estado crudo y el resumen llega después, sin bloquear nada.
+Si configurás `retramo.summary.provider` en `openai`, `anthropic` u `ollama`, al abrir **Volví** se genera un resumen de dos o tres oraciones. El panel muestra primero el estado crudo y el resumen llega después, sin bloquear nada.
 
 **Lo que se envía al proveedor es el JSON de la sesión** (el mismo de arriba, sin el campo `summary`) dentro del prompt que está en [`prompts/summary.txt`](prompts/summary.txt). Como el modelo de sesión no contiene contenido de archivos, no se envía código.
 
-- `openai` y `anthropic` usan tu propia clave. Se guarda en el almacén de secretos de VS Code (`context.secrets`), nunca en `settings.json`. Configurala con `Reentry: Configurar clave de API para resúmenes`.
-- `ollama` usa el endpoint de `reentry.summary.ollamaEndpoint` (default `http://localhost:11434`) y el primer modelo que tengas instalado. No sale nada de tu red.
+- `openai` y `anthropic` usan tu propia clave. Se guarda en el almacén de secretos de VS Code (`context.secrets`), nunca en `settings.json`. Configurala con `Retramo: Configurar clave de API para resúmenes`.
+- `ollama` usa el endpoint de `retramo.summary.ollamaEndpoint` (default `http://localhost:11434`) y el primer modelo que tengas instalado. No sale nada de tu red.
 
 Sin clave configurada y sin endpoint local, la opción no existe: no se muestra nada.
 
 ### 2. Telemetría (opcional, apagada por defecto)
 
-La primera vez que arranca, Reentry pregunta una sola vez: *"¿Podemos contar cuántas veces por semana usás Volví? Solo el número, nada más."* Cerrar el aviso equivale a No.
+La primera vez que arranca, Retramo pregunta una sola vez: *"¿Podemos contar cuántas veces por semana usás Volví? Solo el número, nada más."* Cerrar el aviso equivale a No.
 
 Si decís que sí, una vez por semana se envía **exactamente esto** y nada más:
 
@@ -88,9 +88,9 @@ Si decís que sí, una vez por semana se envía **exactamente esto** y nada más
 { "installId": "<uuid aleatorio>", "returnCount": 12, "version": "0.1.0" }
 ```
 
-Podés cambiarlo cuando quieras con `reentry.telemetry`. Se respeta también `telemetry.telemetryLevel` de VS Code: si lo tenés en `off`, no se envía nada aunque hayas dicho que sí.
+Podés cambiarlo cuando quieras con `retramo.telemetry`. Se respeta también `telemetry.telemetryLevel` de VS Code: si lo tenés en `off`, no se envía nada aunque hayas dicho que sí.
 
-Se envía por `POST` a `https://reentry-telemetry.netlify.app/ping`. El servidor guarda solo esos tres campos, agrupados por semana; no guarda tu IP ni ningún otro dato. Su código está en [`server/telemetry/`](server/telemetry/).
+Se envía por `POST` a `https://retramo-telemetry.netlify.app/ping`. El servidor guarda solo esos tres campos, agrupados por semana; no guarda tu IP ni ningún otro dato. Su código está en [`server/telemetry/`](server/telemetry/).
 
 ## Configuración
 
@@ -98,19 +98,19 @@ Todo lo que hay:
 
 ```json
 {
-  "reentry.idleMinutes": 20,
-  "reentry.captureSelection": false,
-  "reentry.summary.provider": "none",
-  "reentry.summary.ollamaEndpoint": "http://localhost:11434",
-  "reentry.telemetry": false
+  "retramo.idleMinutes": 20,
+  "retramo.captureSelection": false,
+  "retramo.summary.provider": "none",
+  "retramo.summary.ollamaEndpoint": "http://localhost:11434",
+  "retramo.telemetry": false
 }
 ```
 
-`reentry.idleMinutes` tiene un mínimo de 5.
+`retramo.idleMinutes` tiene un mínimo de 5.
 
 ## Errores
 
-Si algo no se puede capturar (no hay git, la terminal está cerrada), Reentry guarda lo que pudo y anota el fallo en el canal de salida **Reentry** (`Ver > Salida`). No muestra errores por cosas que no bloquean.
+Si algo no se puede capturar (no hay git, la terminal está cerrada), Retramo guarda lo que pudo y anota el fallo en el canal de salida **Retramo** (`Ver > Salida`). No muestra errores por cosas que no bloquean.
 
 ## Desarrollo
 

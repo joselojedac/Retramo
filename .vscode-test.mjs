@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Workspace temporal para que "Me fui" tenga una carpeta que capturar.
-const workspaceFolder = mkdtempSync(join(tmpdir(), "reentry-ws-"));
+const workspaceFolder = mkdtempSync(join(tmpdir(), "retramo-ws-"));
 mkdirSync(join(workspaceFolder, "src"));
 writeFileSync(join(workspaceFolder, "src", "main.ts"), "export const a = 1;\nexport const b = 2;\nexport const c = 3;\n");
 

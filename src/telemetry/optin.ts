@@ -15,12 +15,12 @@ import type { Logger } from "../log";
  * El endpoint es una constante para no sumar opciones de configuración
  * (AGENTS.md §11). El servidor está en `server/telemetry/`.
  */
-export const TELEMETRY_ENDPOINT = "https://reentry-telemetry.netlify.app/ping";
+export const TELEMETRY_ENDPOINT = "https://retramo-telemetry.netlify.app/ping";
 
-const KEY_ASKED = "reentry.telemetry.asked";
-const KEY_INSTALL_ID = "reentry.telemetry.installId";
-const KEY_RETURN_COUNT = "reentry.telemetry.returnCount";
-const KEY_LAST_SENT = "reentry.telemetry.lastSentAt";
+const KEY_ASKED = "retramo.telemetry.asked";
+const KEY_INSTALL_ID = "retramo.telemetry.installId";
+const KEY_RETURN_COUNT = "retramo.telemetry.returnCount";
+const KEY_LAST_SENT = "retramo.telemetry.lastSentAt";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export class Telemetry {
@@ -43,7 +43,7 @@ export class Telemetry {
     );
     const enabled = answer === "Sí"; // cerrar el aviso equivale a No
     await vscode.workspace
-      .getConfiguration("reentry")
+      .getConfiguration("retramo")
       .update("telemetry", enabled, vscode.ConfigurationTarget.Global);
     this.log.info(`telemetry: el usuario ${enabled ? "aceptó" : "rechazó"} el conteo semanal`);
   }
@@ -54,7 +54,7 @@ export class Telemetry {
   }
 
   private enabled(): boolean {
-    const optedIn = vscode.workspace.getConfiguration("reentry").get<boolean>("telemetry", false);
+    const optedIn = vscode.workspace.getConfiguration("retramo").get<boolean>("telemetry", false);
     return optedIn && vscode.env.isTelemetryEnabled;
   }
 

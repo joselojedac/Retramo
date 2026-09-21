@@ -5,7 +5,7 @@ import { Session } from "../../src/session/model";
 import { ulid } from "../../src/session/ulid";
 
 export async function tempDir(): Promise<string> {
-  return fs.mkdtemp(path.join(os.tmpdir(), "reentry-test-"));
+  return fs.mkdtemp(path.join(os.tmpdir(), "retramo-test-"));
 }
 
 export function makeSession(overrides: Partial<Session> = {}): Session {

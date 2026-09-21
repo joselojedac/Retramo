@@ -24,7 +24,7 @@ export class ReturnPanel {
   ): Promise<ReturnPanel> {
     if (!ReturnPanel.current) {
       const panel = vscode.window.createWebviewPanel(
-        "reentry.return",
+        "retramo.return",
         "Volví",
         { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false },
         { enableScripts: true, localResourceRoots: [], retainContextWhenHidden: true },
@@ -81,7 +81,7 @@ export class ReturnPanel {
   private async onMessage(message: WebviewMessage): Promise<void> {
     try {
       if (message.type === "history") {
-        await vscode.commands.executeCommand("reentry.history");
+        await vscode.commands.executeCommand("retramo.history");
         return;
       }
       if (message.type === "openFile" && message.path) {

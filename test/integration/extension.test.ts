@@ -1,19 +1,19 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 
-suite("Reentry", () => {
+suite("Retramo", () => {
   test("la extensión se activa y registra sus comandos", async () => {
-    const extension = vscode.extensions.getExtension("joselojedac.reentry");
+    const extension = vscode.extensions.getExtension("joselojedac.retramo");
     assert.ok(extension, "extensión no encontrada");
     await extension.activate();
     const commands = await vscode.commands.getCommands(true);
-    for (const id of ["reentry.leave", "reentry.return", "reentry.history", "reentry.openData", "reentry.setApiKey"]) {
+    for (const id of ["retramo.leave", "retramo.return", "retramo.history", "retramo.openData", "retramo.setApiKey"]) {
       assert.ok(commands.includes(id), `falta el comando ${id}`);
     }
   });
 
   test("la configuración tiene los defaults de la v0", () => {
-    const config = vscode.workspace.getConfiguration("reentry");
+    const config = vscode.workspace.getConfiguration("retramo");
     assert.strictEqual(config.get("idleMinutes"), 20);
     assert.strictEqual(config.get("captureSelection"), false);
     assert.strictEqual(config.get("summary.provider"), "none");
@@ -33,12 +33,12 @@ suite("Reentry", () => {
     const original = window.showInputBox;
     window.showInputBox = async () => "probando el test de integración";
     try {
-      await vscode.commands.executeCommand("reentry.leave");
+      await vscode.commands.executeCommand("retramo.leave");
     } finally {
       window.showInputBox = original;
     }
 
-    await vscode.commands.executeCommand("reentry.return");
+    await vscode.commands.executeCommand("retramo.return");
     const tabs = vscode.window.tabGroups.all.flatMap((group) => group.tabs);
     const panel = tabs.find((tab) => tab.input instanceof vscode.TabInputWebview && tab.label === "Volví");
     assert.ok(panel, "no se abrió el panel de Volví");

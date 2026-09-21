@@ -1,13 +1,13 @@
 {
-  "name": "reentry",
-  "displayName": "Reentry",
+  "name": "retramo",
+  "displayName": "Retramo",
   "description": "Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés. Hecho para gente que pierde el hilo con cada interrupción.",
   "version": "0.1.0",
   "publisher": "joselojedac",
   "license": "SEE LICENSE IN README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/joselojedac/Reentry"
+    "url": "https://github.com/joselojedac/Retramo"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -29,58 +29,58 @@
   "contributes": {
     "commands": [
       {
-        "command": "reentry.leave",
+        "command": "retramo.leave",
         "title": "Me fui",
-        "category": "Reentry"
+        "category": "Retramo"
       },
       {
-        "command": "reentry.return",
+        "command": "retramo.return",
         "title": "Volví",
-        "category": "Reentry"
+        "category": "Retramo"
       },
       {
-        "command": "reentry.history",
+        "command": "retramo.history",
         "title": "Historial",
-        "category": "Reentry"
+        "category": "Retramo"
       },
       {
-        "command": "reentry.openData",
+        "command": "retramo.openData",
         "title": "Abrir carpeta de datos",
-        "category": "Reentry"
+        "category": "Retramo"
       },
       {
-        "command": "reentry.setApiKey",
+        "command": "retramo.setApiKey",
         "title": "Configurar clave de API para resúmenes",
-        "category": "Reentry"
+        "category": "Retramo"
       }
     ],
     "keybindings": [
       {
-        "command": "reentry.leave",
+        "command": "retramo.leave",
         "key": "ctrl+alt+l",
         "mac": "cmd+alt+l"
       },
       {
-        "command": "reentry.return",
+        "command": "retramo.return",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r"
       }
     ],
     "configuration": {
-      "title": "Reentry",
+      "title": "Retramo",
       "properties": {
-        "reentry.idleMinutes": {
+        "retramo.idleMinutes": {
           "type": "number",
           "default": 20,
           "minimum": 5,
           "description": "Minutos sin actividad antes de guardar una sesión automáticamente. Mínimo 5."
         },
-        "reentry.captureSelection": {
+        "retramo.captureSelection": {
           "type": "boolean",
           "default": false,
           "description": "Guardar el texto seleccionado en el editor activo (máximo 200 caracteres). Apagado por defecto."
         },
-        "reentry.summary.provider": {
+        "retramo.summary.provider": {
           "type": "string",
           "enum": [
             "none",
@@ -91,12 +91,12 @@
           "default": "none",
           "description": "Proveedor para el resumen con IA. Con \"none\" no se envía nada a ningún lado."
         },
-        "reentry.summary.ollamaEndpoint": {
+        "retramo.summary.ollamaEndpoint": {
           "type": "string",
           "default": "http://localhost:11434",
           "description": "Endpoint de Ollama (o compatible) para el resumen local."
         },
-        "reentry.telemetry": {
+        "retramo.telemetry": {
           "type": "boolean",
           "default": false,
           "description": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número."
