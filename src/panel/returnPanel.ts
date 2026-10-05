@@ -25,7 +25,7 @@ export class ReturnPanel {
     if (!ReturnPanel.current) {
       const panel = vscode.window.createWebviewPanel(
         "retramo.return",
-        "Volví",
+        panelStrings().title,
         { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false },
         { enableScripts: true, localResourceRoots: [], retainContextWhenHidden: true },
       );
@@ -72,10 +72,15 @@ export class ReturnPanel {
       "utf8",
     );
     const nonce = randomBytes(16).toString("base64");
+    const strings = panelStrings();
+    this.panel.title = strings.title;
     this.panel.webview.html = template
       .replaceAll("{{cspSource}}", this.panel.webview.cspSource)
       .replaceAll("{{nonce}}", nonce)
-      .replace("{{body}}", renderBody(session, summaryPending));
+      .replaceAll("{{lang}}", escape(vscode.env.language))
+      .replaceAll("{{title}}", escape(strings.title))
+      .replaceAll("{{generatingJson}}", JSON.stringify(strings.generating).replaceAll("<", "\\u003c"))
+      .replace("{{body}}", renderBody(session, summaryPending, strings, vscode.env.language));
   }
 
   private async onMessage(message: WebviewMessage): Promise<void> {
@@ -104,11 +109,50 @@ export class ReturnPanel {
   }
 }
 
+// --- Textos -------------------------------------------------------------------
+
+/** Textos visibles del panel. Separados del render para que `renderBody` siga siendo puro. */
+export interface PanelStrings {
+  title: string;
+  summary: string;
+  generating: string;
+  youWereIn: string;
+  uncommitted: string;
+  branch: string;
+  lastCommit: string;
+  terminal: string;
+  inDirectory: string;
+  openFiles: string;
+  manual: string;
+  automatic: string;
+  savedOn: (when: string, how: string) => string;
+  viewHistory: string;
+}
+
+function panelStrings(): PanelStrings {
+  return {
+    title: vscode.l10n.t("I'm back"),
+    summary: vscode.l10n.t("Summary"),
+    generating: vscode.l10n.t("generating..."),
+    youWereIn: vscode.l10n.t("You were in"),
+    uncommitted: vscode.l10n.t("Uncommitted"),
+    branch: vscode.l10n.t("Branch"),
+    lastCommit: vscode.l10n.t("last commit:"),
+    terminal: vscode.l10n.t("Terminal"),
+    inDirectory: vscode.l10n.t("in"),
+    openFiles: vscode.l10n.t("Open files"),
+    manual: vscode.l10n.t("manual"),
+    automatic: vscode.l10n.t("automatic"),
+    savedOn: (when, how) => vscode.l10n.t("Saved on {0} ({1})", when, how),
+    viewHistory: vscode.l10n.t("View history"),
+  };
+}
+
 // --- Render (HTML plano, sin framework) -------------------------------------
 
-export function renderBody(session: Session, summaryPending: boolean): string {
+export function renderBody(session: Session, summaryPending: boolean, t: PanelStrings, locale?: string): string {
   const parts: string[] = [];
-  parts.push(`<h1>Volví</h1>`);
+  parts.push(`<h1>${escape(t.title)}</h1>`);
 
   // 1. Nota
   if (session.note) {
@@ -117,11 +161,11 @@ export function renderBody(session: Session, summaryPending: boolean): string {
 
   // 2. Resumen con IA
   if (session.summary) {
-    parts.push(section("summary", "Resumen", `<p class="summary">${escape(session.summary.text)}</p>`));
+    parts.push(section("summary", t.summary, `<p class="summary">${escape(session.summary.text)}</p>`));
   } else if (summaryPending) {
-    parts.push(section("summary", "Resumen", `<p class="summary muted">generando...</p>`));
+    parts.push(section("summary", t.summary, `<p class="summary muted">${escape(t.generating)}</p>`));
   } else {
-    parts.push(`<section id="summary" hidden><h2>Resumen</h2><p class="summary"></p></section>`);
+    parts.push(`<section id="summary" hidden><h2>${escape(t.summary)}</h2><p class="summary"></p></section>`);
   }
 
   // 3. Archivo activo y línea
@@ -132,48 +176,48 @@ export function renderBody(session: Session, summaryPending: boolean): string {
     if (session.editor.activeSelection) {
       html += `<p class="muted"><code>${escape(session.editor.activeSelection)}</code></p>`;
     }
-    parts.push(section("active", "Estabas en", html));
+    parts.push(section("active", t.youWereIn, html));
   }
 
   // 4. Archivos modificados sin commitear
   if (session.git && session.git.modifiedFiles.length > 0) {
-    parts.push(section("modified", "Sin commitear", list(session.git.modifiedFiles.map((f) => fileLink(f, undefined, f)))));
+    parts.push(section("modified", t.uncommitted, list(session.git.modifiedFiles.map((f) => fileLink(f, undefined, f)))));
   }
 
   // 5. Rama de git
   if (session.git) {
     let html = `<p><code>${escape(session.git.branch)}</code>`;
     if (session.git.lastCommitMessage) {
-      html += ` <span class="muted">· último commit: ${escape(session.git.lastCommitMessage)}</span>`;
+      html += ` <span class="muted">· ${escape(t.lastCommit)} ${escape(session.git.lastCommitMessage)}</span>`;
     }
     html += `</p>`;
-    parts.push(section("branch", "Rama", html));
+    parts.push(section("branch", t.branch, html));
   }
 
   // 6. Últimos comandos de terminal
   if (session.terminal && session.terminal.recentCommands.length > 0) {
     let html = list(session.terminal.recentCommands.map((c) => `<code>${escape(c)}</code>`));
     if (session.terminal.cwd) {
-      html += `<p class="muted">en <code>${escape(session.terminal.cwd)}</code></p>`;
+      html += `<p class="muted">${escape(t.inDirectory)} <code>${escape(session.terminal.cwd)}</code></p>`;
     }
-    parts.push(section("terminal", "Terminal", html));
+    parts.push(section("terminal", t.terminal, html));
   }
 
   // 7. Archivos abiertos, colapsado
   if (session.editor.openFiles.length > 0) {
     parts.push(
-      `<details id="open"><summary><h2>Archivos abiertos (${session.editor.openFiles.length})</h2></summary>` +
+      `<details id="open"><summary><h2>${escape(t.openFiles)} (${session.editor.openFiles.length})</h2></summary>` +
         list(session.editor.openFiles.map((f) => fileLink(f, undefined, f))) +
         `</details>`,
     );
   }
 
   // 8. Pie
-  const when = formatDate(session.createdAt);
-  const how = session.trigger === "manual" ? "manual" : "automático";
+  const when = formatDate(session.createdAt, locale);
+  const how = session.trigger === "manual" ? t.manual : t.automatic;
   parts.push(
-    `<footer>Guardado el ${escape(when)} (${how})` +
-      `<a href="#" data-action="history">Ver historial</a></footer>`,
+    `<footer>${escape(t.savedOn(when, how))}` +
+      `<a href="#" data-action="history">${escape(t.viewHistory)}</a></footer>`,
   );
 
   return parts.join("\n");
@@ -192,12 +236,12 @@ function fileLink(relativePath: string, line: number | undefined, label: string)
   return `<a href="#" data-action="open" data-path="${escape(relativePath)}"${lineAttr}><code>${escape(label)}</code></a>`;
 }
 
-export function formatDate(iso: string): string {
+export function formatDate(iso: string, locale?: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return iso;
   }
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

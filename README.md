@@ -1,47 +1,51 @@
 # Retramo
 
-Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés.
+Saves your working state when you step away and shows it to you when you come back.
 
-Está hecha para gente con ADHD (o con demasiadas reuniones) que pierde el hilo con cada interrupción. Dos acciones, nada de configuración para empezar, y todo se queda en tu máquina.
+It's made for people with ADHD (or too many meetings) who lose the thread with every interruption. Two actions, no setup to get started, and everything stays on your machine.
 
-## Dos acciones
+![Retramo: "I'm leaving" saves where you were; "I'm back" takes you right back to that line](media/demo.gif)
 
-| Acción | Comando | Atajo |
+## Two actions
+
+| Action | Command | Shortcut |
 |---|---|---|
-| **Me fui** | `Retramo: Me fui` | `Ctrl+Alt+L` (`Cmd+Alt+L` en Mac) |
-| **Volví** | `Retramo: Volví` | `Ctrl+Alt+R` (`Cmd+Alt+R` en Mac) |
+| **I'm leaving** | `Retramo: I'm leaving` | `Ctrl+Alt+L` (`Cmd+Alt+L` on Mac) |
+| **I'm back** | `Retramo: I'm back` | `Ctrl+Alt+R` (`Cmd+Alt+R` on Mac) |
 
-**Me fui** captura dónde estabas, te deja escribir una nota de una línea (opcional, Enter vacío para saltear) y guarda la sesión.
+**I'm leaving** captures where you were, lets you write a one-line note (optional; press Enter with no text to skip), and saves the session.
 
-**Volví** abre un panel al lado del editor con lo que dejaste, en este orden:
+**I'm back** opens a panel next to the editor with what you left behind, in this order:
 
-1. Tu nota, en grande.
-2. Resumen con IA, si lo configuraste.
-3. Archivo activo y línea, como link.
-4. Archivos modificados sin commitear.
-5. Rama de git.
-6. Últimos comandos de terminal.
-7. Archivos abiertos (colapsado).
+1. Your note, in large type.
+2. An AI summary, if you set one up.
+3. The active file and line, as a link.
+4. Uncommitted modified files.
+5. The git branch.
+6. Recent terminal commands.
+7. Open files (collapsed).
 
-Además, si pasás 20 minutos sin tocar nada, Retramo guarda una sesión sola. Sin avisos, sin popups.
+On top of that, if you go 20 minutes without touching anything, Retramo saves a session on its own. No alerts, no popups.
 
-Comandos secundarios:
+Secondary commands:
 
-- `Retramo: Historial` — elegí entre las últimas 20 sesiones.
-- `Retramo: Abrir carpeta de datos` — abre la carpeta con los JSON, para que veas exactamente qué se guardó.
-- `Retramo: Configurar clave de API para resúmenes` — solo si querés resúmenes con OpenAI o Anthropic.
+- `Retramo: History` — pick from your last 20 sessions.
+- `Retramo: Open data folder` — opens the folder with the JSON files, so you can see exactly what was saved.
+- `Retramo: Set API key for summaries` — only if you want summaries from OpenAI or Anthropic.
 
-## Qué se guarda
+The interface follows VS Code's display language: English by default, Spanish if your VS Code is in Spanish.
 
-Cada sesión es un archivo JSON legible, uno por sesión, en la carpeta de almacenamiento global de VS Code. Se ve así:
+## What gets saved
+
+Each session is a readable JSON file, one per session, in VS Code's global storage folder. It looks like this:
 
 ```json
 {
   "id": "01J9X4M3V9K2Q4R8T7W1Z5B6C7",
   "createdAt": "2025-09-17T14:03:00.000Z",
   "trigger": "manual",
-  "note": "el test de login falla por el token vencido",
-  "workspace": { "name": "mi-app", "rootPath": "/home/yo/mi-app" },
+  "note": "login test fails because the token expired",
+  "workspace": { "name": "my-app", "rootPath": "/home/me/my-app" },
   "editor": {
     "activeFile": "src/auth/login.ts",
     "activeLine": 42,
@@ -54,47 +58,47 @@ Cada sesión es un archivo JSON legible, uno por sesión, en la carpeta de almac
   },
   "terminal": {
     "recentCommands": ["npm test -- login"],
-    "cwd": "/home/yo/mi-app"
+    "cwd": "/home/me/my-app"
   }
 }
 ```
 
-**Nunca se guarda contenido de archivos ni diffs.** Solo nombres, rutas relativas al workspace y posiciones. La única excepción es la selección del editor activo, recortada a 200 caracteres, y solo si activás `retramo.captureSelection` (viene apagado).
+**File contents and diffs are never saved.** Only names, paths relative to the workspace, and positions. The one exception is the active editor's selection, trimmed to 200 characters, and only if you turn on `retramo.captureSelection` (it's off by default).
 
-Los comandos de terminal se registran a medida que los ejecutás (VS Code 1.93 o superior), sin su salida. Git se lee a través de la extensión Git integrada, nunca ejecutando `git` por shell.
+Terminal commands are recorded as you run them (VS Code 1.93 or later), without their output. Git is read through VS Code's built-in Git extension, never by running `git` in a shell.
 
-## Local por defecto
+## Local by default
 
-Nada sale de tu máquina salvo que lo actives explícitamente. Ni telemetría, ni contenido, ni claves. Hay exactamente dos cosas que pueden salir, y las dos son opt-in:
+Nothing leaves your machine unless you explicitly turn it on. No telemetry, no content, no keys. There are exactly two things that can leave, and both are opt-in:
 
-### 1. Resumen con IA (opcional)
+### 1. AI summary (optional)
 
-Si configurás `retramo.summary.provider` en `openai`, `anthropic` u `ollama`, al abrir **Volví** se genera un resumen de dos o tres oraciones. El panel muestra primero el estado crudo y el resumen llega después, sin bloquear nada.
+If you set `retramo.summary.provider` to `openai`, `anthropic` or `ollama`, opening **I'm back** generates a two-or-three-sentence summary. The panel shows the raw state first and the summary arrives afterwards, without blocking anything.
 
-**Lo que se envía al proveedor es el JSON de la sesión** (el mismo de arriba, sin el campo `summary`) dentro del prompt que está en [`prompts/summary.txt`](prompts/summary.txt). Como el modelo de sesión no contiene contenido de archivos, no se envía código.
+**What gets sent to the provider is the session JSON** (the same one shown above, without the `summary` field) inside the prompt in [`prompts/summary.txt`](prompts/summary.txt). Since the session model holds no file contents, no code is sent.
 
-- `openai` y `anthropic` usan tu propia clave. Se guarda en el almacén de secretos de VS Code (`context.secrets`), nunca en `settings.json`. Configurala con `Retramo: Configurar clave de API para resúmenes`.
-- `ollama` usa el endpoint de `retramo.summary.ollamaEndpoint` (default `http://localhost:11434`) y el primer modelo que tengas instalado. No sale nada de tu red.
+- `openai` and `anthropic` use your own key. It's stored in VS Code's secret storage (`context.secrets`), never in `settings.json`. Set it with `Retramo: Set API key for summaries`.
+- `ollama` uses the endpoint in `retramo.summary.ollamaEndpoint` (default `http://localhost:11434`) and the first model you have installed. Nothing leaves your network.
 
-Sin clave configurada y sin endpoint local, la opción no existe: no se muestra nada.
+With no key configured and no local endpoint, the option doesn't exist: nothing is shown.
 
-### 2. Telemetría (opcional, apagada por defecto)
+### 2. Telemetry (optional, off by default)
 
-La primera vez que arranca, Retramo pregunta una sola vez: *"¿Podemos contar cuántas veces por semana usás Volví? Solo el número, nada más."* Cerrar el aviso equivale a No.
+The first time it starts, Retramo asks once: *"Can we count how many times a week you use “I'm back”? Just the number, nothing else."* Closing the prompt counts as No.
 
-Si decís que sí, una vez por semana se envía **exactamente esto** y nada más:
+If you say yes, once a week **exactly this** is sent, and nothing else:
 
 ```json
-{ "installId": "<uuid aleatorio>", "returnCount": 12, "version": "0.1.0" }
+{ "installId": "<random uuid>", "returnCount": 12, "version": "0.1.0" }
 ```
 
-Podés cambiarlo cuando quieras con `retramo.telemetry`. Se respeta también `telemetry.telemetryLevel` de VS Code: si lo tenés en `off`, no se envía nada aunque hayas dicho que sí.
+You can change it at any time with `retramo.telemetry`. VS Code's `telemetry.telemetryLevel` is respected too: if it's set to `off`, nothing is sent even if you said yes.
 
-Se envía por `POST` a `https://retramo-telemetry.netlify.app/ping`. El servidor guarda solo esos tres campos, agrupados por semana; no guarda tu IP ni ningún otro dato. Su código está en [`server/telemetry/`](server/telemetry/).
+It's sent via `POST` to `https://retramo-telemetry.netlify.app/ping`. The server stores only those three fields, grouped by week; it doesn't store your IP or anything else. Its code is in [`server/telemetry/`](server/telemetry/).
 
-## Configuración
+## Settings
 
-Todo lo que hay:
+This is all there is:
 
 ```json
 {
@@ -106,29 +110,29 @@ Todo lo que hay:
 }
 ```
 
-`retramo.idleMinutes` tiene un mínimo de 5.
+`retramo.idleMinutes` has a minimum of 5.
 
-## Errores
+## Errors
 
-Si algo no se puede capturar (no hay git, la terminal está cerrada), Retramo guarda lo que pudo y anota el fallo en el canal de salida **Retramo** (`Ver > Salida`). No muestra errores por cosas que no bloquean.
+If something can't be captured (no git, the terminal is closed), Retramo saves what it could and logs the failure to the **Retramo** output channel (`View > Output`). It doesn't show errors for things that don't block you.
 
-## Desarrollo
+## Development
 
 ```bash
 npm install
 npm run compile      # TypeScript → out/
 npm run lint
-npm run test:unit    # vitest, sin VS Code
-npm test             # @vscode/test-electron, descarga VS Code
-npm run package      # genera el .vsix
+npm run test:unit    # vitest, no VS Code needed
+npm test             # @vscode/test-electron, downloads VS Code
+npm run package      # builds the .vsix
 ```
 
-`F5` en VS Code abre un host de desarrollo con la extensión cargada.
+`F5` in VS Code opens a development host with the extension loaded.
 
-La especificación completa del proyecto está en [`AGENTS.md`](AGENTS.md).
+Translations live in `package.nls.*.json` (commands and settings) and `l10n/bundle.l10n.*.json` (everything else).
 
 ## Roadmap
 
-- **v0** (esto): extensión de VS Code, local, dos acciones.
-- **Fase 2**: pulido del panel y del resumen.
-- **Fase 3**: CLI en Go que comparte el formato de sesión, y sincronización opcional entre máquinas.
+- **v0** (this): VS Code extension, local, two actions.
+- **Phase 2**: polish for the panel and the summary.
+- **Phase 3**: a Go CLI that shares the session format, plus optional sync between machines.

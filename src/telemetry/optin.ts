@@ -36,12 +36,13 @@ export class Telemetry {
       return;
     }
     await this.context.globalState.update(KEY_ASKED, true);
+    const yes = vscode.l10n.t("Yes");
     const answer = await vscode.window.showInformationMessage(
-      "¿Podemos contar cuántas veces por semana usás Volví? Solo el número, nada más.",
-      "Sí",
-      "No",
+      vscode.l10n.t("Can we count how many times a week you use “I'm back”? Just the number, nothing else."),
+      yes,
+      vscode.l10n.t("No"),
     );
-    const enabled = answer === "Sí"; // cerrar el aviso equivale a No
+    const enabled = answer === yes; // cerrar el aviso equivale a No
     await vscode.workspace
       .getConfiguration("retramo")
       .update("telemetry", enabled, vscode.ConfigurationTarget.Global);

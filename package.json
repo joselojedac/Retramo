@@ -1,7 +1,7 @@
 {
   "name": "retramo",
   "displayName": "Retramo",
-  "description": "Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés. Hecho para gente que pierde el hilo con cada interrupción.",
+  "description": "%description%",
   "version": "0.1.0",
   "publisher": "joselojedac",
   "license": "SEE LICENSE IN README.md",
@@ -26,31 +26,32 @@
     "onStartupFinished"
   ],
   "main": "./out/src/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "commands": [
       {
         "command": "retramo.leave",
-        "title": "Me fui",
+        "title": "%command.leave%",
         "category": "Retramo"
       },
       {
         "command": "retramo.return",
-        "title": "Volví",
+        "title": "%command.return%",
         "category": "Retramo"
       },
       {
         "command": "retramo.history",
-        "title": "Historial",
+        "title": "%command.history%",
         "category": "Retramo"
       },
       {
         "command": "retramo.openData",
-        "title": "Abrir carpeta de datos",
+        "title": "%command.openData%",
         "category": "Retramo"
       },
       {
         "command": "retramo.setApiKey",
-        "title": "Configurar clave de API para resúmenes",
+        "title": "%command.setApiKey%",
         "category": "Retramo"
       }
     ],
@@ -73,12 +74,12 @@
           "type": "number",
           "default": 20,
           "minimum": 5,
-          "description": "Minutos sin actividad antes de guardar una sesión automáticamente. Mínimo 5."
+          "description": "%config.idleMinutes%"
         },
         "retramo.captureSelection": {
           "type": "boolean",
           "default": false,
-          "description": "Guardar el texto seleccionado en el editor activo (máximo 200 caracteres). Apagado por defecto."
+          "description": "%config.captureSelection%"
         },
         "retramo.summary.provider": {
           "type": "string",
@@ -89,17 +90,17 @@
             "ollama"
           ],
           "default": "none",
-          "description": "Proveedor para el resumen con IA. Con \"none\" no se envía nada a ningún lado."
+          "description": "%config.summary.provider%"
         },
         "retramo.summary.ollamaEndpoint": {
           "type": "string",
           "default": "http://localhost:11434",
-          "description": "Endpoint de Ollama (o compatible) para el resumen local."
+          "description": "%config.summary.ollamaEndpoint%"
         },
         "retramo.telemetry": {
           "type": "boolean",
           "default": false,
-          "description": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número."
+          "description": "%config.telemetry%"
         }
       }
     }

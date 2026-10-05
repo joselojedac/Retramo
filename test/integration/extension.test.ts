@@ -40,7 +40,10 @@ suite("Retramo", () => {
 
     await vscode.commands.executeCommand("retramo.return");
     const tabs = vscode.window.tabGroups.all.flatMap((group) => group.tabs);
-    const panel = tabs.find((tab) => tab.input instanceof vscode.TabInputWebview && tab.label === "Volví");
+    // Por tipo de vista y no por título: el título depende del idioma de VS Code.
+    const panel = tabs.find(
+      (tab) => tab.input instanceof vscode.TabInputWebview && tab.input.viewType.endsWith("retramo.return"),
+    );
     assert.ok(panel, "no se abrió el panel de Volví");
     assert.notStrictEqual(panel.group.viewColumn, vscode.ViewColumn.One, "el panel reemplazó al editor activo");
   });

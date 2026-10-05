@@ -1,0 +1,13 @@
+{
+  "description": "Guarda tu estado de trabajo cuando te vas y te lo muestra cuando volvés. Hecho para gente que pierde el hilo con cada interrupción.",
+  "command.leave": "Me fui",
+  "command.return": "Volví",
+  "command.history": "Historial",
+  "command.openData": "Abrir carpeta de datos",
+  "command.setApiKey": "Configurar clave de API para resúmenes",
+  "config.idleMinutes": "Minutos sin actividad antes de guardar una sesión automáticamente. Mínimo 5.",
+  "config.captureSelection": "Guardar el texto seleccionado en el editor activo (máximo 200 caracteres). Apagado por defecto.",
+  "config.summary.provider": "Proveedor para el resumen con IA. Con \"none\" no se envía nada a ningún lado.",
+  "config.summary.ollamaEndpoint": "Endpoint de Ollama (o compatible) para el resumen local.",
+  "config.telemetry": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número."
+}

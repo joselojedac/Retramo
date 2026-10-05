@@ -38,7 +38,7 @@ export async function createSummaryProvider(
   }
   const key = await context.secrets.get(SECRET_KEYS[kind]);
   if (!key) {
-    log.warn(`summary: proveedor "${kind}" configurado pero sin clave; usá "Retramo: Configurar clave de API"`);
+    log.warn(`summary: proveedor "${kind}" configurado pero sin clave; usá "Retramo: Set API key for summaries"`);
     return undefined;
   }
   return kind === "openai" ? new OpenAIProvider(key, template) : new AnthropicProvider(key, template);

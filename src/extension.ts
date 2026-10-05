@@ -31,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!folder) {
       log.warn("leave: no hay carpeta abierta, no se guarda sesión");
       if (trigger === "manual") {
-        vscode.window.setStatusBarMessage("Retramo: abrí una carpeta para guardar una sesión", 4000);
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: open a folder to save a session"), 4000);
       }
       return undefined;
     }
@@ -115,8 +115,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("retramo.leave", async () => {
       const note = await vscode.window.showInputBox({
-        placeHolder: "¿Qué estabas haciendo? (opcional)",
-        prompt: "Enter vacío para saltear",
+        placeHolder: vscode.l10n.t("What were you doing? (optional)"),
+        prompt: vscode.l10n.t("Press Enter with no text to skip"),
         ignoreFocusOut: true,
       });
       if (note === undefined) {
@@ -125,18 +125,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       try {
         const session = await leave("manual", note);
         if (session) {
-          vscode.window.setStatusBarMessage("Retramo: sesión guardada", 3000);
+          vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: session saved"), 3000);
         }
       } catch (error) {
         log.error("leave: no se pudo guardar la sesión", error);
-        vscode.window.setStatusBarMessage("Retramo: no se pudo guardar (ver log)", 4000);
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: could not save (see log)"), 4000);
       }
     }),
 
     vscode.commands.registerCommand("retramo.return", async () => {
       const session = (await store.latest(currentRoot())) ?? (await store.latest());
       if (!session) {
-        vscode.window.setStatusBarMessage("Retramo: todavía no hay sesiones guardadas", 4000);
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: no saved sessions yet"), 4000);
         return;
       }
       await showSession(session);
@@ -145,17 +145,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("retramo.history", async () => {
       const entries = await store.list(HISTORY_LIMIT);
       if (entries.length === 0) {
-        vscode.window.setStatusBarMessage("Retramo: todavía no hay sesiones guardadas", 4000);
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: no saved sessions yet"), 4000);
         return;
       }
       const picked = await vscode.window.showQuickPick(
         entries.map((entry) => ({
-          label: entry.note ?? entry.activeFile ?? "(sin nota)",
-          description: `${entry.workspaceName} · ${entry.trigger === "manual" ? "manual" : "automático"}`,
-          detail: new Date(entry.createdAt).toLocaleString(),
+          label: entry.note ?? entry.activeFile ?? vscode.l10n.t("(no note)"),
+          description: `${entry.workspaceName} · ${entry.trigger === "manual" ? vscode.l10n.t("manual") : vscode.l10n.t("automatic")}`,
+          detail: new Date(entry.createdAt).toLocaleString(vscode.env.language),
           id: entry.id,
         })),
-        { placeHolder: "Elegí una sesión", matchOnDescription: true, matchOnDetail: true },
+        { placeHolder: vscode.l10n.t("Pick a session"), matchOnDescription: true, matchOnDetail: true },
       );
       if (!picked) {
         return;
@@ -183,13 +183,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         kind === "openai" || kind === "anthropic"
           ? kind
           : await vscode.window.showQuickPick(["openai", "anthropic"], {
-              placeHolder: "¿Para qué proveedor?",
+              placeHolder: vscode.l10n.t("Which provider?"),
             });
       if (provider !== "openai" && provider !== "anthropic") {
         return;
       }
       const key = await vscode.window.showInputBox({
-        prompt: `Clave de API de ${provider}. Se guarda en el almacén de secretos de VS Code, nunca en settings.json.`,
+        prompt: vscode.l10n.t("{0} API key. Stored in VS Code's secret storage, never in settings.json.", provider),
         password: true,
         ignoreFocusOut: true,
       });
@@ -198,14 +198,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       if (key.trim() === "") {
         await context.secrets.delete(SECRET_KEYS[provider]);
-        vscode.window.setStatusBarMessage(`Retramo: clave de ${provider} eliminada`, 3000);
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: {0} key removed", provider), 3000);
         return;
       }
       await context.secrets.store(SECRET_KEYS[provider], key.trim());
       if (kind === "none") {
         await config().update("summary.provider", provider, vscode.ConfigurationTarget.Global);
       }
-      vscode.window.setStatusBarMessage(`Retramo: clave de ${provider} guardada`, 3000);
+      vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: {0} key saved", provider), 3000);
     }),
   );
 
