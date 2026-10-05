@@ -78,11 +78,13 @@
         },
         "retramo.captureSelection": {
           "type": "boolean",
+          "scope": "application",
           "default": false,
           "description": "%config.captureSelection%"
         },
         "retramo.summary.provider": {
           "type": "string",
+          "scope": "application",
           "enum": [
             "none",
             "openai",
@@ -94,11 +96,13 @@
         },
         "retramo.summary.ollamaEndpoint": {
           "type": "string",
+          "scope": "application",
           "default": "http://localhost:11434",
           "description": "%config.summary.ollamaEndpoint%"
         },
         "retramo.telemetry": {
           "type": "boolean",
+          "scope": "application",
           "default": false,
           "description": "%config.telemetry%"
         }

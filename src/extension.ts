@@ -85,8 +85,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Panel de "volví" ----------------------------------------------------
 
-  async function showSession(session: Session): Promise<void> {
-    const provider = session.summary ? undefined : await createSummaryProvider(context, log);
+  /**
+   * `allowSummary` en false muestra la sesión sin mandarla a ningún proveedor.
+   * Se usa cuando la sesión no la eligió el usuario y es de otro proyecto.
+   */
+  async function showSession(session: Session, allowSummary: boolean): Promise<void> {
+    const provider = session.summary || !allowSummary ? undefined : await createSummaryProvider(context, log);
     const panel = await ReturnPanel.show(context, session, log, provider !== undefined);
     await telemetry.recordReturn();
     if (!provider) {
@@ -134,12 +138,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     vscode.commands.registerCommand("retramo.return", async () => {
-      const session = (await store.latest(currentRoot())) ?? (await store.latest());
+      const own = await store.latest(currentRoot());
+      // Sin sesión de este proyecto se muestra la última de cualquiera, pero
+      // sin resumen: no se manda a un proveedor algo que el usuario no eligió.
+      const session = own ?? (await store.latest());
       if (!session) {
         vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: no saved sessions yet"), 4000);
         return;
       }
-      await showSession(session);
+      await showSession(session, own !== undefined);
     }),
 
     vscode.commands.registerCommand("retramo.history", async () => {
@@ -162,7 +169,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const session = await store.get(picked.id);
       if (session) {
-        await showSession(session);
+        await showSession(session, true); // elegida a mano por el usuario
       }
     }),
 
