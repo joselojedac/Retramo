@@ -16,3 +16,4 @@ AGENTS.md
 **/*.vsix
 .claude/**
 server/**
+media/**
