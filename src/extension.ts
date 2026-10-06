@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "node:path";
 import { createLogger, Logger } from "./log";
 import { Session, SessionStore, HISTORY_LIMIT } from "./session";
-import { MAX_INTENT_CHARS } from "./session/model";
+import { clampIntent, MAX_INTENT_CHARS } from "./session/model";
 import { captureSession } from "./capture";
 import { captureEditor } from "./capture/editor";
 import { captureGit } from "./capture/git";
@@ -71,9 +71,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     } catch (error) {
       log.error("baseline: no se pudo capturar", error);
     }
+    let draft: Session | undefined;
+    try {
+      draft = await captureState(folder);
+    } catch (error) {
+      log.error("capture: no se pudo tomar la foto del editor", error);
+    }
     const awayLog = new AwayLog(awayExcludes(folder.uri));
     const watcher = watchAway(watchRoot, awayLog);
-    return { baseline, log: awayLog, stop: () => watcher.dispose() };
+    return { baseline, draft, log: awayLog, stop: () => watcher.dispose() };
+  }
+
+  /** Editor, git y terminal en este momento. */
+  function captureState(folder: vscode.WorkspaceFolder): Promise<Session> {
+    const root = folder.uri.fsPath;
+    return captureSession(
+      { trigger: "manual", workspace: { name: folder.name, rootPath: root } },
+      {
+        editor: () => captureEditor(root),
+        git: () => captureGit(root),
+        terminal: () => terminal.capture(),
+      },
+      log,
+    );
   }
 
   async function saveSession(input: SaveInput): Promise<Session | undefined> {
@@ -82,16 +102,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       log.warn("leave: no hay carpeta abierta, no se guarda sesión");
       return undefined;
     }
-    const root = folder.uri.fsPath;
-    const session = await captureSession(
-      { trigger: input.trigger, intent: input.intent, workspace: { name: folder.name, rootPath: root } },
-      {
-        editor: () => captureEditor(root),
-        git: () => captureGit(root),
-        terminal: () => terminal.capture(),
-      },
-      log,
-    );
+    // La foto de cuando se fue (con la línea de base), o una nueva si no hay.
+    const session = input.draft ?? (await captureState(folder));
+    session.trigger = input.trigger;
+    const intent = clampIntent(input.intent);
+    if (intent) {
+      session.intent = intent;
+    }
     if (input.baseline) {
       session.baseline = input.baseline;
     }

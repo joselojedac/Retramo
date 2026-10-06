@@ -40,7 +40,7 @@ The interface follows VS Code's display language: English by default, Spanish if
 
 ## How "while you were away" works
 
-**Only you count as you.** An agent editing files, a formatter or a `git pull` doesn't make Retramo think you're at your desk. Typing, moving the cursor, clicking, scrolling, focusing the window and running a command in the terminal you're using all count. Edits made by extensions or by programs outside VS Code don't.
+**Only you count as you.** An agent editing files, a formatter or a `git pull` doesn't make Retramo think you're at your desk. Typing, moving the cursor, clicking, scrolling, focusing the window and typing in the terminal all count, including chatting with an agent like Claude Code inside VS Code's terminal. Edits made by extensions or by programs outside VS Code don't.
 
 **A snapshot when you leave.** Retramo records your `HEAD`, your branch, and a snapshot of your uncommitted work with `git stash create`. That command doesn't touch your working tree, your index or your stash list. It only writes unreferenced objects into `.git`, which git cleans up on its own. Untracked files are recorded as SHA-256 hashes, never their contents.
 
@@ -162,7 +162,7 @@ This is all there is:
 
 ## Known limitations
 
-- **Chatting with an agent inside the terminal** (Claude Code, Codex, Aider) doesn't count as presence: VS Code doesn't let extensions see what you type in the terminal. The worst case is an automatic session you didn't need, and a status-bar item when you next touch the editor. Commands you run in the terminal do count.
+- **Leaving VS Code focused while you're away is fine**, but leaving it focused *and* touching the keyboard or mouse isn't: Retramo can't tell your cat from you.
 - **JetBrains keymap users:** `Ctrl+Alt+L` is "Reformat Code" there. Rebind either one under *Keyboard Shortcuts*.
 
 ## Errors

@@ -22,6 +22,7 @@ function setup() {
       recordings++;
       const rec = {
         baseline: { repoRoot: "", head: "a".repeat(40), branch: "main", untracked: {}, capturedAt: new Date().toISOString() },
+        draft: makeSession({ createdAt: new Date().toISOString() }),
         log: new AwayLog(),
         stopped: false,
         stop() {
@@ -67,6 +68,7 @@ describe("AwayController", () => {
     expect(saved[0].away.startedAt).toBe(new Date(T0).toISOString()); // la última presencia
     expect(saved[0].away.watchedPaths).toEqual(["src/a.ts"]);
     expect(made).toHaveLength(1); // no tomó otra línea de base a los 20
+    expect(saved[0].draft).toBe(made[0].draft); // ni otra foto del editor y git
   });
 
   it("si vuelve antes de la inactividad, la candidata se descarta", async () => {

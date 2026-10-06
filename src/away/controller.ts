@@ -10,9 +10,15 @@ export const GRACE_MS = 60_000;
 /** Cada cuánto se persisten las rutas del watcher durante la ausencia. */
 export const FLUSH_MS = 30_000;
 
-/** Lo que se graba durante una ausencia: línea de base y watcher. */
+/**
+ * Lo que se graba durante una ausencia: línea de base, watcher y la foto del
+ * editor, git y terminal tomada en el mismo momento. En la captura
+ * automática, esa foto es la de los 2 minutos: "lo que tenías sin commitear"
+ * no puede incluir lo que hizo el agente después.
+ */
 export interface AwayRecording {
   baseline?: Baseline;
+  draft?: Session;
   log: AwayLog;
   stop(): void;
 }
@@ -21,6 +27,8 @@ export interface SaveInput {
   trigger: SessionTrigger;
   intent?: string;
   baseline?: Baseline;
+  /** Foto tomada junto con la línea de base; sin ella se captura en el momento. */
+  draft?: Session;
   away: NonNullable<Session["away"]>;
 }
 
@@ -129,6 +137,7 @@ export class AwayController {
       trigger: "manual",
       intent,
       baseline: recording?.baseline,
+      draft: recording?.draft,
       away: { startedAt: new Date(startedAt).toISOString(), watchedPaths: [], overflow: 0 },
     });
     if (!session) {
@@ -191,6 +200,7 @@ export class AwayController {
     const session = await this.deps.saveSession({
       trigger: "idle",
       baseline: candidate.recording?.baseline,
+      draft: candidate.recording?.draft,
       away: {
         startedAt: new Date(candidate.startedAt).toISOString(),
         ...(candidate.recording?.log.snapshot() ?? { watchedPaths: [], overflow: 0 }),

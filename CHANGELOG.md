@@ -6,7 +6,7 @@ Retramo now tells you what changed while you were away, whoever changed it: an A
 
 - **While you were away.** "I'm leaving" snapshots your repository (`HEAD`, branch, `git stash create`, hashes of untracked files). "I'm back" lists new commits with their authors and every changed file; clicking a file opens a diff of only what changed since you left.
 - **Return detection.** When you come back, a status-bar item says what changed (`4 changes while you were away`) and opens the panel on click. The panel never opens by itself.
-- **Only you count as you.** Agent edits, formatters and changes from disk no longer reset the inactivity timer. Typing, clicking, scrolling, window focus and terminal commands do.
+- **Only you count as you.** Agent edits, formatters and changes from disk no longer reset the inactivity timer. Typing, clicking, scrolling, window focus and typing in the terminal do, including chatting with a terminal agent like Claude Code.
 - **The automatic capture keeps the agent's work.** Its snapshot is taken a couple of minutes after you stop, so what an agent does before the capture still shows up as a change.
 - **Intent.** "I'm leaving" asks *"What were you in the middle of?"* (up to 200 characters). Sessions from 0.1 are migrated on read: the note becomes the intent.
 - **AI summary, two levels.** By default it gets names, statuses and commit subjects, no code. `retramo.summary.includeDiffs` adds the diff (up to 20,000 characters, never `.env`, keys or credentials) after a one-time confirmation. Anthropic requests retry declined requests on a recommended fallback model.
