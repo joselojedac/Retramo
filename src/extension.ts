@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "node:path";
 import { createLogger, Logger } from "./log";
 import { Session, SessionStore, HISTORY_LIMIT } from "./session";
 import { MAX_INTENT_CHARS } from "./session/model";
@@ -6,13 +7,23 @@ import { captureSession } from "./capture";
 import { captureEditor } from "./capture/editor";
 import { captureGit } from "./capture/git";
 import { TerminalTracker } from "./capture/terminal";
-import { IdleDetector, normalizeIdleMinutes } from "./idle/detector";
+import { normalizeIdleMinutes } from "./idle/detector";
 import { PresenceFilter, SelectionKind } from "./idle/presence";
-import { ReturnPanel } from "./panel/returnPanel";
+import { AwayController, AwayRecording, SaveInput } from "./away/controller";
+import { AwayLog } from "./away/log";
+import { awayExcludes, watchAway } from "./away/watcher";
+import { captureBaseline } from "./baseline/snapshot";
+import { computeAwayChanges } from "./changes/compute";
+import { createGitRunner } from "./git/exec";
+import { getGitApi, pickRepository } from "./git/api";
+import { isObjectId } from "./git/objectId";
+import { ReturnStatusBar } from "./return/statusBar";
+import { PanelChanges, ReturnPanel } from "./panel/returnPanel";
 import { createSummaryProvider, configuredProviderKind, SECRET_KEYS } from "./summary";
 import { Telemetry } from "./telemetry/optin";
 
 let log: Logger;
+let controller: AwayController | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const channel = vscode.window.createOutputChannel("Retramo");
@@ -21,25 +32,52 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const store = new SessionStore(context.globalStorageUri.fsPath, log);
   const terminal = new TerminalTracker(log);
-  context.subscriptions.push(terminal);
+  const statusBar = new ReturnStatusBar();
+  context.subscriptions.push(terminal, statusBar);
   const telemetry = new Telemetry(context, log);
 
   const config = () => vscode.workspace.getConfiguration("retramo");
+  const workspaceFolder = () => vscode.workspace.workspaceFolders?.[0];
+  const currentRoot = () => workspaceFolder()?.uri.fsPath;
 
-  // --- Captura -------------------------------------------------------------
+  // --- Ausencia: línea de base, watcher y regreso --------------------------
 
-  async function leave(trigger: "manual" | "idle", intent?: string): Promise<Session | undefined> {
-    const folder = vscode.workspace.workspaceFolders?.[0];
+  async function startRecording(): Promise<AwayRecording | undefined> {
+    const folder = workspaceFolder();
+    if (!folder) {
+      return undefined;
+    }
+    const workspaceRoot = folder.uri.fsPath;
+    let baseline: AwayRecording["baseline"];
+    let watchRoot = workspaceRoot;
+    try {
+      const api = await getGitApi();
+      const repo = api && pickRepository(api.repositories, workspaceRoot, vscode.window.activeTextEditor?.document.uri.fsPath);
+      if (api && repo) {
+        const repoRoot = repo.rootUri.fsPath;
+        baseline = await captureBaseline({ git: createGitRunner(api.git.path, repoRoot), repoRoot, workspaceRoot });
+        watchRoot = repoRoot; // con línea de base, las rutas son relativas al repo
+        if (baseline.error) {
+          log.warn(`baseline: ${baseline.error}`);
+        }
+      }
+    } catch (error) {
+      log.error("baseline: no se pudo capturar", error);
+    }
+    const awayLog = new AwayLog(awayExcludes(folder.uri));
+    const watcher = watchAway(watchRoot, awayLog);
+    return { baseline, log: awayLog, stop: () => watcher.dispose() };
+  }
+
+  async function saveSession(input: SaveInput): Promise<Session | undefined> {
+    const folder = workspaceFolder();
     if (!folder) {
       log.warn("leave: no hay carpeta abierta, no se guarda sesión");
-      if (trigger === "manual") {
-        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: open a folder to save a session"), 4000);
-      }
       return undefined;
     }
     const root = folder.uri.fsPath;
     const session = await captureSession(
-      { trigger, intent, workspace: { name: folder.name, rootPath: root } },
+      { trigger: input.trigger, intent: input.intent, workspace: { name: folder.name, rootPath: root } },
       {
         editor: () => captureEditor(root),
         git: () => captureGit(root),
@@ -47,28 +85,56 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       },
       log,
     );
+    if (input.baseline) {
+      session.baseline = input.baseline;
+    }
+    session.away = input.away;
     await store.save(session);
-    log.info(`leave: sesión ${session.id} guardada (${trigger})`);
+    log.info(`leave: sesión ${session.id} guardada (${input.trigger})`);
     return session;
   }
 
-  // --- Inactividad ---------------------------------------------------------
+  /** "Mientras no estabas" para una sesión, listo para el panel. */
+  async function changesFor(session: Session): Promise<PanelChanges | undefined> {
+    if (!session.baseline && !session.away) {
+      return undefined; // sesión v1: la sección no se muestra
+    }
+    const baseline = session.baseline;
+    const repoRoot = baseline ? path.resolve(session.workspace.rootPath, baseline.repoRoot) : session.workspace.rootPath;
+    const api = await getGitApi().catch(() => undefined);
+    const git = api && baseline ? createGitRunner(api.git.path, repoRoot) : undefined;
+    const changes = await computeAwayChanges({ session, git, repoRoot });
+    const ref = baseline && (changes.baselineLost ? baseline.head : (baseline.snapshot ?? baseline.head));
+    return {
+      changes,
+      repoRoot,
+      ref: isObjectId(ref) ? ref : undefined,
+      toGitUri: api ? (uri, commit) => api.toGitUri(uri, commit) : undefined,
+    };
+  }
 
-  const idle = new IdleDetector({
-    getIdleMs: () => normalizeIdleMinutes(config().get("idleMinutes")) * 60_000,
-    onIdle: async () => {
-      const session = await leave("idle");
-      if (session) {
-        log.info("idle: sesión automática guardada");
+  const away = new AwayController({
+    idleMs: () => normalizeIdleMinutes(config().get("idleMinutes")) * 60_000,
+    startRecording,
+    saveSession,
+    persist: (session) => store.save(session),
+    onReturn: async (session) => {
+      try {
+        const view = await changesFor(session);
+        if (view) {
+          statusBar.show(view.changes);
+        }
+      } catch (error) {
+        log.error("return: no se pudieron calcular los cambios", error);
       }
     },
-    onError: (error) => log.error("idle: falló la captura automática", error),
+    log,
   });
-  context.subscriptions.push({ dispose: () => idle.dispose() });
+  controller = away;
 
   // Solo la actividad humana cuenta como presencia (ver idle/presence.ts).
-  // onDidChangeTextDocument NO se escucha: lo disparan agentes y formateadores.
-  const presence = new PresenceFilter({ onPresence: () => idle.activity() });
+  // onDidChangeTextDocument NO cuenta: lo disparan agentes y formateadores.
+  const presence = new PresenceFilter({ onPresence: () => away.presence() });
   context.subscriptions.push({ dispose: () => presence.dispose() });
   const focused = () => vscode.window.state.focused;
   context.subscriptions.push(
@@ -90,21 +156,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("retramo.idleMinutes")) {
-        idle.restart();
+        away.restartIdle();
       }
     }),
   );
-  idle.start();
 
-  // --- Panel de "volví" ----------------------------------------------------
+  away.start();
+  // Una sesión guardada sin regreso (VS Code se cerró durante la ausencia)
+  // sigue abierta: la próxima presencia es el regreso.
+  const pending = await store.latest(currentRoot()).catch(() => undefined);
+  if (pending && currentRoot()) {
+    away.restore(pending);
+  }
+
+  // --- Panel de "I'm back" -------------------------------------------------
 
   /**
    * `allowSummary` en false muestra la sesión sin mandarla a ningún proveedor.
    * Se usa cuando la sesión no la eligió el usuario y es de otro proyecto.
    */
   async function showSession(session: Session, allowSummary: boolean): Promise<void> {
+    statusBar.hide();
+    let view: PanelChanges | undefined;
+    try {
+      view = await changesFor(session);
+    } catch (error) {
+      log.error("panel: no se pudieron calcular los cambios", error);
+    }
     const provider = session.summary || !allowSummary ? undefined : await createSummaryProvider(context, log);
-    const panel = await ReturnPanel.show(context, session, log, provider !== undefined);
+    const panel = await ReturnPanel.show(context, session, log, provider !== undefined, view);
     await telemetry.recordReturn();
     if (!provider) {
       return;
@@ -123,14 +203,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })();
   }
 
-  function currentRoot(): string | undefined {
-    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  }
-
   // --- Comandos ------------------------------------------------------------
 
   context.subscriptions.push(
     vscode.commands.registerCommand("retramo.leave", async () => {
+      if (!workspaceFolder()) {
+        vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: open a folder to save a session"), 4000);
+        return;
+      }
       const intent = await vscode.window.showInputBox({
         placeHolder: vscode.l10n.t("What were you in the middle of? (optional)"),
         prompt: vscode.l10n.t("Press Enter with no text to skip"),
@@ -144,7 +224,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return; // Escape: cancelado
       }
       try {
-        const session = await leave("manual", intent);
+        const session = await away.leaveManual(intent);
         if (session) {
           vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: session saved"), 3000);
         }
@@ -155,7 +235,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
 
     vscode.commands.registerCommand("retramo.return", async () => {
-      const own = await store.latest(currentRoot());
+      // Pedirlo a mano también cierra la ausencia abierta, si hay.
+      const ended = await away.returnNow();
+      const own = ended ?? (await store.latest(currentRoot()));
       // Sin sesión de este proyecto se muestra la última de cualquiera, pero
       // sin resumen: no se manda a un proveedor algo que el usuario no eligió.
       const session = own ?? (await store.latest());
@@ -253,6 +335,8 @@ function selectionKind(kind: vscode.TextEditorSelectionChangeKind | undefined): 
   }
 }
 
-export function deactivate(): void {
+export async function deactivate(): Promise<void> {
   ReturnPanel.dispose();
+  await controller?.dispose();
+  controller = undefined;
 }

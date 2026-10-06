@@ -85,6 +85,15 @@
           "minimum": 5,
           "description": "%config.idleMinutes%"
         },
+        "retramo.away.exclude": {
+          "type": "array",
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%config.away.exclude%"
+        },
         "retramo.summary.provider": {
           "type": "string",
           "scope": "application",
