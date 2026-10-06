@@ -6,6 +6,7 @@ import { captureEditor } from "./capture/editor";
 import { captureGit } from "./capture/git";
 import { TerminalTracker } from "./capture/terminal";
 import { IdleDetector, normalizeIdleMinutes } from "./idle/detector";
+import { PresenceFilter, SelectionKind } from "./idle/presence";
 import { ReturnPanel } from "./panel/returnPanel";
 import { createSummaryProvider, configuredProviderKind, SECRET_KEYS } from "./summary";
 import { Telemetry } from "./telemetry/optin";
@@ -63,17 +64,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     onError: (error) => log.error("idle: falló la captura automática", error),
   });
   context.subscriptions.push({ dispose: () => idle.dispose() });
-  const activity = () => idle.activity();
+
+  // Solo la actividad humana cuenta como presencia (ver idle/presence.ts).
+  // onDidChangeTextDocument NO se escucha: lo disparan agentes y formateadores.
+  const presence = new PresenceFilter({ onPresence: () => idle.activity() });
+  context.subscriptions.push({ dispose: () => presence.dispose() });
+  const focused = () => vscode.window.state.focused;
   context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument(activity),
-    vscode.window.onDidChangeActiveTextEditor(activity),
-    vscode.window.onDidChangeTextEditorSelection(activity),
-    // Perder el foco NO dispara nada: el temporizador sigue corriendo.
-    vscode.window.onDidChangeWindowState((state) => {
-      if (state.focused) {
-        activity();
+    vscode.window.onDidChangeTextEditorSelection((e) => presence.selection(selectionKind(e.kind), focused())),
+    vscode.window.onDidChangeTextEditorVisibleRanges(() => presence.visibleRanges(focused())),
+    vscode.window.onDidChangeActiveTextEditor(() => presence.nonHuman()),
+    vscode.workspace.onDidChangeTextDocument((e) => {
+      // Solo para descartar el scroll que acompaña a una edición. Los canales
+      // de salida (incluido el log de Retramo) también son documentos: se ignoran.
+      const scheme = e.document.uri.scheme;
+      if (e.contentChanges.length > 0 && (scheme === "file" || scheme === "untitled")) {
+        presence.nonHuman();
       }
     }),
+    // Perder el foco NO dispara nada: el temporizador sigue corriendo.
+    vscode.window.onDidChangeWindowState((state) => presence.windowFocus(state.focused)),
+    vscode.window.onDidStartTerminalShellExecution((e) =>
+      presence.shellExecution(e.terminal === vscode.window.activeTerminal, focused()),
+    ),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("retramo.idleMinutes")) {
         idle.restart();
@@ -220,6 +233,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   void telemetry.askOnce().then(() => telemetry.flushIfDue());
 
   log.info("Retramo activa");
+}
+
+function selectionKind(kind: vscode.TextEditorSelectionChangeKind | undefined): SelectionKind {
+  switch (kind) {
+    case vscode.TextEditorSelectionChangeKind.Keyboard:
+      return "keyboard";
+    case vscode.TextEditorSelectionChangeKind.Mouse:
+      return "mouse";
+    case vscode.TextEditorSelectionChangeKind.Command:
+      return "command";
+    default:
+      return "unknown";
+  }
 }
 
 export function deactivate(): void {
