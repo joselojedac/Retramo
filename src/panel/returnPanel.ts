@@ -162,6 +162,7 @@ export interface PanelStrings {
   branchChanged: (from: string, to: string) => string;
   detached: string;
   newCommits: string;
+  changedFiles: string;
   historyRewritten: string;
   baselineLost: string;
   nothingChanged: string;
@@ -190,6 +191,7 @@ function panelStrings(): PanelStrings {
     branchChanged: (from, to) => vscode.l10n.t("Branch changed: {0} → {1}", from, to),
     detached: vscode.l10n.t("(detached)"),
     newCommits: vscode.l10n.t("New commits"),
+    changedFiles: vscode.l10n.t("Changed files"),
     historyRewritten: vscode.l10n.t("The branch history was rewritten (rebase or reset), so new commits can't be listed."),
     baselineLost: vscode.l10n.t("Compared against your last commit: the snapshot of your uncommitted work is gone."),
     nothingChanged: vscode.l10n.t("Nothing changed while you were away."),
@@ -319,7 +321,8 @@ function renderChanges(changes: AwayChanges, t: PanelStrings): string {
   }
   if (changes.files.length > 0) {
     parts.push(
-      list(
+      `<h3>${escape(t.changedFiles)}</h3>` +
+        list(
         changes.files.map((file) => {
           const label = `<code>${escape(file.path)}</code>`;
           const item =
