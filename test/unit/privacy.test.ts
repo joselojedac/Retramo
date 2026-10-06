@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import { captureSession } from "../../src/capture/index";
 import { SessionStore } from "../../src/session/store";
-import { buildPrompt, sessionForPrompt } from "../../src/summary/provider";
+import { buildPayload, buildPrompt } from "../../src/summary/provider";
 import { silentLogger } from "../../src/log";
 import { makeSession, tempDir } from "./helpers";
 
@@ -61,16 +61,17 @@ describe("privacidad", () => {
     }
   });
 
-  it("al proveedor de IA se envía sólo el JSON de la sesión, sin resumen previo", () => {
+  it("al proveedor de IA no viaja el resumen anterior", () => {
     const session = makeSession({
-      summary: { text: "viejo", provider: "test", generatedAt: "2024-01-01T00:00:00.000Z" },
+      intent: "seguir",
+      summary: { text: "viejo", provider: "test", includedDiffs: false, generatedAt: "2024-01-01T00:00:00.000Z" },
     });
-    const sent = sessionForPrompt(session);
-    expect("summary" in sent).toBe(false);
-    const prompt = buildPrompt("Hola\n{session_json}\nFin", session);
+    const payload = buildPayload(session);
+    expect("summary" in payload).toBe(false);
+    const prompt = buildPrompt("Hola\n{payload_json}\nFin", payload);
     expect(prompt.startsWith("Hola\n")).toBe(true);
     expect(prompt.endsWith("\nFin")).toBe(true);
     expect(prompt).not.toContain("viejo");
-    expect(JSON.parse(prompt.slice(5, -4))).toEqual(sent);
+    expect(JSON.parse(prompt.slice(5, -4))).toEqual(payload);
   });
 });

@@ -11,6 +11,7 @@ describe("package.json", () => {
   it.each([
     "retramo.summary.provider",
     "retramo.summary.ollamaEndpoint",
+    "retramo.summary.includeDiffs",
     "retramo.telemetry",
   ])("%s solo se puede configurar a nivel usuario", (key) => {
     expect(settings[key]?.scope).toBe("application");

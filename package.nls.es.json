@@ -10,5 +10,6 @@
   "config.summary.ollamaEndpoint": "Endpoint de Ollama (o compatible) para el resumen local.",
   "config.telemetry": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número.",
   "capabilities.untrustedWorkspaces": "Retramo ejecuta git dentro del repositorio, y la configuración de un repositorio puede ejecutar comandos. Igual que la extensión de Git de VS Code, solo funciona en workspaces de confianza.",
-  "config.away.exclude": "Patrones glob que no se registran en \"mientras no estabas\" (por ejemplo **/*.log). .git, node_modules y las carpetas de build se excluyen siempre. Los cambios que ve git se informan igual."
+  "config.away.exclude": "Patrones glob que no se registran en \"mientras no estabas\" (por ejemplo **/*.log). .git, node_modules y las carpetas de build se excluyen siempre. Los cambios que ve git se informan igual.",
+  "config.summary.includeDiffs": "**Manda código al proveedor del resumen.** Agrega el diff de los archivos que cambiaron mientras no estabas (hasta 20.000 caracteres; nunca `.env`, claves ni credenciales). Apagado por defecto; pide confirmación la primera vez."
 }

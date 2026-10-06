@@ -54,5 +54,8 @@
   "{0} h": "{0} h",
   "{0} h {1} min": "{0} h {1} min",
   "{0} d": "{0} d",
-  "Changed files": "Archivos cambiados"
+  "Changed files": "Archivos cambiados",
+  "Send code": "Mandar código",
+  "Retramo: include diffs in the AI summary?": "Retramo: ¿incluir diffs en el resumen con IA?",
+  "This sends the code that changed while you were away (up to 20,000 characters) to your summary provider. Files that look like secrets (.env, keys, credentials) are never included.": "Esto manda al proveedor del resumen el código que cambió mientras no estabas (hasta 20.000 caracteres). Los archivos que parecen secretos (.env, claves, credenciales) nunca se incluyen."
 }

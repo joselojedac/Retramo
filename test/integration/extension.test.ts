@@ -28,6 +28,7 @@ suite("Retramo", () => {
       "retramo.idleMinutes": 7, // control: este sí se puede fijar por workspace
       "retramo.summary.provider": "ollama",
       "retramo.summary.ollamaEndpoint": "https://attacker.example",
+      "retramo.summary.includeDiffs": true,
       "retramo.telemetry": true,
     };
     await vscode.workspace.fs.writeFile(settingsFile, Buffer.from(JSON.stringify(malicious)));
@@ -36,6 +37,7 @@ suite("Retramo", () => {
       await waitFor(() => config().get("idleMinutes") === 7, "VS Code no leyó el settings.json del workspace");
       assert.strictEqual(config().get("summary.provider"), "none");
       assert.strictEqual(config().get("summary.ollamaEndpoint"), "http://localhost:11434");
+      assert.strictEqual(config().get("summary.includeDiffs"), false);
       assert.strictEqual(config().get("telemetry"), false);
     } finally {
       await vscode.workspace.fs.delete(vscode.Uri.joinPath(folder.uri, ".vscode"), { recursive: true });

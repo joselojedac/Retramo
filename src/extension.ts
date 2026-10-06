@@ -14,16 +14,23 @@ import { AwayLog } from "./away/log";
 import { awayExcludes, watchAway } from "./away/watcher";
 import { captureBaseline } from "./baseline/snapshot";
 import { computeAwayChanges } from "./changes/compute";
-import { createGitRunner } from "./git/exec";
+import { collectDiffs } from "./changes/diffs";
+import { createGitRunner, GitRunner } from "./git/exec";
 import { getGitApi, pickRepository } from "./git/api";
 import { isObjectId } from "./git/objectId";
 import { ReturnStatusBar } from "./return/statusBar";
 import { PanelChanges, ReturnPanel } from "./panel/returnPanel";
 import { createSummaryProvider, configuredProviderKind, SECRET_KEYS } from "./summary";
+import { buildPayload } from "./summary/provider";
 import { Telemetry } from "./telemetry/optin";
 
 let log: Logger;
 let controller: AwayController | undefined;
+
+const DIFFS_CONFIRMED = "retramo.includeDiffs.confirmed";
+
+/** Lo que el panel muestra, más el runner de git para pedir diffs. */
+type ChangesContext = PanelChanges & { git?: GitRunner };
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const channel = vscode.window.createOutputChannel("Retramo");
@@ -95,7 +102,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   /** "Mientras no estabas" para una sesión, listo para el panel. */
-  async function changesFor(session: Session): Promise<PanelChanges | undefined> {
+  async function changesFor(session: Session): Promise<ChangesContext | undefined> {
     if (!session.baseline && !session.away) {
       return undefined; // sesión v1: la sección no se muestra
     }
@@ -110,6 +117,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       repoRoot,
       ref: isObjectId(ref) ? ref : undefined,
       toGitUri: api ? (uri, commit) => api.toGitUri(uri, commit) : undefined,
+      git,
     };
   }
 
@@ -158,6 +166,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (e.affectsConfiguration("retramo.idleMinutes")) {
         away.restartIdle();
       }
+      if (e.affectsConfiguration("retramo.summary.includeDiffs")) {
+        void confirmIncludeDiffs();
+      }
     }),
   );
 
@@ -169,6 +180,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     away.restore(pending);
   }
 
+  /**
+   * Activar includeDiffs manda código al proveedor: la primera vez se
+   * confirma. Si el usuario no confirma, el ajuste vuelve a false. Es la otra
+   * excepción a "nunca interrumpe": la dispara el usuario al activarlo.
+   */
+  async function confirmIncludeDiffs(): Promise<void> {
+    if (!config().get<boolean>("summary.includeDiffs", false) || context.globalState.get<boolean>(DIFFS_CONFIRMED, false)) {
+      return;
+    }
+    const send = vscode.l10n.t("Send code");
+    const answer = await vscode.window.showWarningMessage(
+      vscode.l10n.t("Retramo: include diffs in the AI summary?"),
+      {
+        modal: true,
+        detail: vscode.l10n.t(
+          "This sends the code that changed while you were away (up to 20,000 characters) to your summary provider. Files that look like secrets (.env, keys, credentials) are never included.",
+        ),
+      },
+      send,
+    );
+    if (answer === send) {
+      await context.globalState.update(DIFFS_CONFIRMED, true);
+      log.info("summary: el usuario confirmó includeDiffs");
+    } else {
+      await config().update("summary.includeDiffs", false, vscode.ConfigurationTarget.Global);
+      log.info("summary: includeDiffs no confirmado, se vuelve a false");
+    }
+  }
+
   // --- Panel de "I'm back" -------------------------------------------------
 
   /**
@@ -177,7 +217,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
    */
   async function showSession(session: Session, allowSummary: boolean): Promise<void> {
     statusBar.hide();
-    let view: PanelChanges | undefined;
+    let view: ChangesContext | undefined;
     try {
       view = await changesFor(session);
     } catch (error) {
@@ -192,8 +232,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Primero se muestra el estado crudo; el resumen llega después sin bloquear.
     void (async () => {
       try {
-        const text = await provider.summarize(session);
-        session.summary = { text, provider: provider.name, includedDiffs: false, generatedAt: new Date().toISOString() };
+        // Código solo con includeDiffs activado Y confirmado por el usuario.
+        const wantsDiffs = config().get<boolean>("summary.includeDiffs", false) && context.globalState.get<boolean>(DIFFS_CONFIRMED, false);
+        const diffs = wantsDiffs && view?.git && view.ref ? await collectDiffs(view.git, view.ref, view.changes.files) : "";
+        const text = await provider.summarize(buildPayload(session, view?.changes, diffs || undefined));
+        session.summary = { text, provider: provider.name, includedDiffs: diffs !== "", generatedAt: new Date().toISOString() };
         await store.save(session);
         panel.updateSummary(session.id, text);
       } catch (error) {

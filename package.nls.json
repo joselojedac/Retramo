@@ -10,5 +10,6 @@
   "config.summary.ollamaEndpoint": "Ollama (or compatible) endpoint for the local summary.",
   "config.telemetry": "Once a week, send how many times you used \"I'm back\". Just the number.",
   "capabilities.untrustedWorkspaces": "Retramo runs git inside the repository, and a repository's configuration can run commands. Like VS Code's own Git extension, it only runs in trusted workspaces.",
-  "config.away.exclude": "Glob patterns to leave out of the \"while you were away\" file list (for example **/*.log). .git, node_modules and build folders are always left out. Changes git sees are still reported."
+  "config.away.exclude": "Glob patterns to leave out of the \"while you were away\" file list (for example **/*.log). .git, node_modules and build folders are always left out. Changes git sees are still reported.",
+  "config.summary.includeDiffs": "**Sends code to the summary provider.** Adds the diff of the files that changed while you were away (up to 20,000 characters; never `.env`, keys or credentials). Off by default; asks for confirmation the first time."
 }

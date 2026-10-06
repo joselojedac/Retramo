@@ -106,6 +106,12 @@
           "default": "none",
           "description": "%config.summary.provider%"
         },
+        "retramo.summary.includeDiffs": {
+          "type": "boolean",
+          "scope": "application",
+          "default": false,
+          "markdownDescription": "%config.summary.includeDiffs%"
+        },
         "retramo.summary.ollamaEndpoint": {
           "type": "string",
           "scope": "application",
