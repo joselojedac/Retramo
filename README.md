@@ -1,8 +1,10 @@
 # Retramo
 
-Saves your working state when you step away and shows it to you when you come back.
+When you come back after an interruption, Retramo tells you three things: what you were in the middle of, what changed while you were away, and what to review first.
 
-It's made for people with ADHD (or too many meetings) who lose the thread with every interruption. Two actions, no setup to get started, and everything stays on your machine.
+It's made for people with ADHD, and for anyone who works alongside AI agents. Your agent remembers its own session; nothing remembers *yours*. Retramo does, and it doesn't care who changed the code: Copilot, Claude Code, Cursor's agent, a teammate or a `git pull`.
+
+Two actions, no setup to get started, and everything stays on your machine.
 
 ![Retramo: "I'm leaving" saves where you were; "I'm back" takes you right back to that line](media/demo.gif)
 
@@ -13,19 +15,20 @@ It's made for people with ADHD (or too many meetings) who lose the thread with e
 | **I'm leaving** | `Retramo: I'm leaving` | `Ctrl+Alt+L` (`Cmd+Alt+L` on Mac) |
 | **I'm back** | `Retramo: I'm back` | `Ctrl+Alt+R` (`Cmd+Alt+R` on Mac) |
 
-**I'm leaving** captures where you were, lets you write a one-line note (optional; press Enter with no text to skip), and saves the session.
+**I'm leaving** asks *"What were you in the middle of?"* (optional, up to 200 characters; press Enter with no text to skip), snapshots the state of your repository, and saves the session.
 
-**I'm back** opens a panel next to the editor with what you left behind, in this order:
+**I'm back** opens a panel next to the editor, in this order:
 
-1. Your note, in large type.
-2. An AI summary, if you set one up.
-3. The active file and line, as a link.
-4. Uncommitted modified files.
-5. The git branch.
-6. Recent terminal commands.
-7. Open files (collapsed).
+1. **You were in the middle of**: what you wrote, in large type.
+2. **While you were away**: branch changes, new commits with their authors, and every file that changed. Click a file to see a diff of *only what changed since you left*, not what you already had uncommitted.
+3. An AI summary, if you set one up.
+4. The active file and line, as a link.
+5. What you had uncommitted when you left.
+6. The git branch.
+7. Recent terminal commands.
+8. Open files (collapsed).
 
-On top of that, if you go 20 minutes without touching anything, Retramo saves a session on its own. No alerts, no popups.
+You don't have to remember to press anything. If you go 20 minutes without doing anything, Retramo saves a session on its own. When you come back, a single item appears in the status bar, for example `Retramo: 4 changes while you were away`. Click it to open the panel. Retramo never opens the panel by itself, and there are no popups.
 
 Secondary commands:
 
@@ -35,16 +38,29 @@ Secondary commands:
 
 The interface follows VS Code's display language: English by default, Spanish if your VS Code is in Spanish.
 
+## How "while you were away" works
+
+**Only you count as you.** An agent editing files, a formatter or a `git pull` doesn't make Retramo think you're at your desk. Typing, moving the cursor, clicking, scrolling, focusing the window and running a command in the terminal you're using all count. Edits made by extensions or by programs outside VS Code don't.
+
+**A snapshot when you leave.** Retramo records your `HEAD`, your branch, and a snapshot of your uncommitted work with `git stash create`. That command doesn't touch your working tree, your index or your stash list. It only writes unreferenced objects into `.git`, which git cleans up on its own. Untracked files are recorded as SHA-256 hashes, never their contents.
+
+When the automatic capture kicks in, the snapshot is the one taken a couple of minutes after you stopped, not the one 20 minutes later. That way, everything your agent did in the meantime still shows up as a change.
+
+**Coming back.** Retramo compares the repository against that snapshot: new commits, changed tracked files, new or changed untracked files, plus any file the editor saw change. Retramo never modifies your repository.
+
+If the snapshot was garbage-collected (`git gc`) during a long absence, Retramo compares against your last commit and says so. If the branch history was rewritten (rebase or reset), it says that instead of listing commits that don't make sense.
+
 ## What gets saved
 
 Each session is a readable JSON file, one per session, in VS Code's global storage folder. It looks like this:
 
 ```json
 {
+  "schemaVersion": 2,
   "id": "01J9X4M3V9K2Q4R8T7W1Z5B6C7",
-  "createdAt": "2025-09-17T14:03:00.000Z",
+  "createdAt": "2026-10-06T14:03:00.000Z",
   "trigger": "manual",
-  "note": "login test fails because the token expired",
+  "intent": "waiting for the agent to fix the login test",
   "workspace": { "name": "my-app", "rootPath": "/home/me/my-app" },
   "editor": {
     "activeFile": "src/auth/login.ts",
@@ -56,16 +72,27 @@ Each session is a readable JSON file, one per session, in VS Code's global stora
     "modifiedFiles": ["src/auth/login.ts"],
     "lastCommitMessage": "wip: refresh token"
   },
-  "terminal": {
-    "recentCommands": ["npm test -- login"],
-    "cwd": "/home/me/my-app"
+  "terminal": { "recentCommands": ["npm test -- login"], "cwd": "/home/me/my-app" },
+  "baseline": {
+    "repoRoot": "",
+    "head": "3f2a9c...",
+    "branch": "fix/login-token",
+    "snapshot": "c88ca7...",
+    "untracked": { "notes.md": "9f86d081884c7d65..." },
+    "capturedAt": "2026-10-06T14:03:00.000Z"
+  },
+  "away": {
+    "startedAt": "2026-10-06T14:03:00.000Z",
+    "watchedPaths": ["src/auth/login.ts", "test/login.test.ts"],
+    "overflow": 0,
+    "endedAt": "2026-10-06T14:50:00.000Z"
   }
 }
 ```
 
-**File contents and diffs are never saved.** Only names, paths relative to the workspace, and positions. The one exception is the active editor's selection, trimmed to 200 characters, and only if you turn on `retramo.captureSelection` (it's off by default).
+**File contents and diffs are never saved.** The session only holds paths relative to the workspace, positions, commit hashes and SHA-256 hashes of untracked files. The one place your uncommitted work is copied to is the `git stash create` snapshot, which lives in your own repository's `.git` folder and never leaves your machine.
 
-Terminal commands are recorded as you run them (VS Code 1.93 or later), without their output. Git is read through VS Code's built-in Git extension, never by running `git` in a shell.
+Terminal commands are recorded as you run them, without their output.
 
 ## Local by default
 
@@ -73,14 +100,26 @@ Nothing leaves your machine unless you explicitly turn it on. No telemetry, no c
 
 ### 1. AI summary (optional)
 
-If you set `retramo.summary.provider` to `openai`, `anthropic` or `ollama`, opening **I'm back** generates a two-or-three-sentence summary. The panel shows the raw state first and the summary arrives afterwards, without blocking anything.
+If you set `retramo.summary.provider` to `openai`, `anthropic` or `ollama`, opening **I'm back** generates a two-or-three-sentence summary. The panel shows everything else first and the summary arrives afterwards, without blocking anything.
 
-**What gets sent to the provider is the session JSON** (the same one shown above, without the `summary` field) inside the prompt in [`prompts/summary.txt`](prompts/summary.txt). Since the session model holds no file contents, no code is sent.
+**What gets sent** is built field by field, inside the prompt in [`prompts/summary.txt`](prompts/summary.txt):
 
-- `openai` and `anthropic` use your own key. It's stored in VS Code's secret storage (`context.secrets`), never in `settings.json`. Set it with `Retramo: Set API key for summaries`.
+- what you were in the middle of
+- the workspace name, your active file and line, your open files
+- your branch, the files you had uncommitted, your last commit message
+- your recent terminal commands
+- while you were away: how long, branch changes, new commits (subject and author), changed files (path and status)
+
+**What never gets sent:** file contents, the snapshot, commit hashes, the hashes of your untracked files, absolute paths, or session ids.
+
+The summary isn't generated for a session from a different project that you didn't pick yourself. That happens when you press **I'm back** in a folder with no sessions of its own.
+
+- `openai` and `anthropic` use your own key. It's stored in VS Code's secret storage (`context.secrets`), never in `settings.json`. Set it with `Retramo: Set API key for summaries`. With `anthropic`, a request declined by a safety classifier is retried server-side on the fallback model Anthropic recommends for that case.
 - `ollama` uses the endpoint in `retramo.summary.ollamaEndpoint` (default `http://localhost:11434`) and the first model you have installed. Nothing leaves your network.
 
 With no key configured and no local endpoint, the option doesn't exist: nothing is shown.
+
+**Sending code is a separate opt-in.** With `retramo.summary.includeDiffs`, the summary also gets the diff of the files that changed while you were away. That diff is truncated at 20,000 characters and excludes deleted files and anything that looks like a secret (`.env*`, `*.pem`, `*.key`, SSH keys, files with "credential" or "secret" in the name). The first time you turn it on, Retramo asks you to confirm; if you don't, it switches back off.
 
 ### 2. Telemetry (optional, off by default)
 
@@ -89,7 +128,7 @@ The first time it starts, Retramo asks once: *"Can we count how many times a wee
 If you say yes, once a week **exactly this** is sent, and nothing else:
 
 ```json
-{ "installId": "<random uuid>", "returnCount": 12, "version": "0.1.0" }
+{ "installId": "<random uuid>", "returnCount": 12, "version": "0.2.0" }
 ```
 
 You can change it at any time with `retramo.telemetry`. VS Code's `telemetry.telemetryLevel` is respected too: if it's set to `off`, nothing is sent even if you said yes.
@@ -103,14 +142,28 @@ This is all there is:
 ```json
 {
   "retramo.idleMinutes": 20,
-  "retramo.captureSelection": false,
+  "retramo.away.exclude": [],
   "retramo.summary.provider": "none",
+  "retramo.summary.includeDiffs": false,
   "retramo.summary.ollamaEndpoint": "http://localhost:11434",
   "retramo.telemetry": false
 }
 ```
 
-`retramo.idleMinutes` has a minimum of 5.
+- `retramo.idleMinutes` has a minimum of 5.
+- `retramo.away.exclude` takes glob patterns, such as `**/*.log`, that are left out of the "while you were away" list. `.git`, `node_modules`, `dist`, `build`, `out`, `.next` and `target` are always left out. Changes git sees are still reported.
+- `summary.provider`, `summary.ollamaEndpoint`, `summary.includeDiffs` and `telemetry` only work in your **user** settings. A repository's `.vscode/settings.json` can't change where your data goes or turn on anything you didn't.
+
+## Security
+
+- **Trusted workspaces only.** Retramo runs git inside your repository, and a repository's configuration can run commands. Like VS Code's own Git extension, Retramo stays off in Restricted Mode.
+- **Git is never run through a shell.** Retramo uses the same git binary as VS Code's Git extension, with `core.fsmonitor` disabled, without external diff tools or text conversion filters, and without taking the index lock, so it doesn't collide with an agent using git at the same time.
+- **Anything from the repository is data.** File names, branch names, commit messages and diffs are escaped before they're shown and never interpreted as code, and the summary prompt tells the model to treat them as data too.
+
+## Known limitations
+
+- **Chatting with an agent inside the terminal** (Claude Code, Codex, Aider) doesn't count as presence: VS Code doesn't let extensions see what you type in the terminal. The worst case is an automatic session you didn't need, and a status-bar item when you next touch the editor. Commands you run in the terminal do count.
+- **JetBrains keymap users:** `Ctrl+Alt+L` is "Reformat Code" there. Rebind either one under *Keyboard Shortcuts*.
 
 ## Errors
 
@@ -122,7 +175,7 @@ If something can't be captured (no git, the terminal is closed), Retramo saves w
 npm install
 npm run compile      # TypeScript → out/
 npm run lint
-npm run test:unit    # vitest, no VS Code needed
+npm run test:unit    # vitest, no VS Code needed (uses real temporary git repos)
 npm test             # @vscode/test-electron, downloads VS Code
 npm run package      # builds the .vsix
 ```
@@ -133,6 +186,10 @@ Translations live in `package.nls.*.json` (commands and settings) and `l10n/bund
 
 ## Roadmap
 
-- **v0** (this): VS Code extension, local, two actions.
-- **Phase 2**: polish for the panel and the summary.
-- **Phase 3**: a Go CLI that shares the session format, plus optional sync between machines.
+- **v0.1**: where you were (file, line, branch, commands).
+- **v0.2** (this): what changed while you were away, agent-independent.
+- **Next**: reading AI agents' own session files, and a Go CLI that shares the session format.
+
+## License
+
+[MIT](LICENSE)
