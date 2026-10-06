@@ -6,8 +6,8 @@
   "command.openData": "Abrir carpeta de datos",
   "command.setApiKey": "Configurar clave de API para resúmenes",
   "config.idleMinutes": "Minutos sin actividad antes de guardar una sesión automáticamente. Mínimo 5.",
-  "config.captureSelection": "Guardar el texto seleccionado en el editor activo (máximo 200 caracteres). Apagado por defecto.",
   "config.summary.provider": "Proveedor para el resumen con IA. Con \"none\" no se envía nada a ningún lado.",
   "config.summary.ollamaEndpoint": "Endpoint de Ollama (o compatible) para el resumen local.",
-  "config.telemetry": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número."
+  "config.telemetry": "Enviar una vez por semana la cantidad de veces que usaste Volví. Solo el número.",
+  "capabilities.untrustedWorkspaces": "Retramo ejecuta git dentro del repositorio, y la configuración de un repositorio puede ejecutar comandos. Igual que la extensión de Git de VS Code, solo funciona en workspaces de confianza."
 }

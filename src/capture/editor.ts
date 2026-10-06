@@ -1,17 +1,12 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
-import { clampSelection, MAX_SELECTION_CHARS, Session } from "../session/model";
+import { Session } from "../session/model";
 
 /**
- * Captura archivos abiertos (en orden de pestañas), archivo activo, línea y,
- * sólo si el usuario lo activó, la selección recortada a 200 caracteres.
- *
- * Nunca lee el contenido de un documento más allá de esa selección.
+ * Captura archivos abiertos (en orden de pestañas), archivo activo y línea.
+ * Nunca lee el contenido de un documento.
  */
-export async function captureEditor(
-  workspaceRoot: string,
-  captureSelection: boolean,
-): Promise<Session["editor"]> {
+export async function captureEditor(workspaceRoot: string): Promise<Session["editor"]> {
   const openFiles: string[] = [];
   for (const group of vscode.window.tabGroups.all) {
     for (const tab of group.tabs) {
@@ -31,18 +26,6 @@ export async function captureEditor(
     if (relative) {
       result.activeFile = relative;
       result.activeLine = active.selection.active.line + 1;
-      if (captureSelection && !active.selection.isEmpty) {
-        // Acotamos el rango ANTES de leer: nunca cargamos más de 200 caracteres.
-        const start = active.selection.start;
-        const cap = active.document.positionAt(
-          active.document.offsetAt(start) + MAX_SELECTION_CHARS,
-        );
-        const end = active.selection.end.isBefore(cap) ? active.selection.end : cap;
-        const selection = clampSelection(active.document.getText(new vscode.Range(start, end)));
-        if (selection) {
-          result.activeSelection = selection;
-        }
-      }
     }
   }
 

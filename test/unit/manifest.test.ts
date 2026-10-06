@@ -12,7 +12,6 @@ describe("package.json", () => {
     "retramo.summary.provider",
     "retramo.summary.ollamaEndpoint",
     "retramo.telemetry",
-    "retramo.captureSelection",
   ])("%s solo se puede configurar a nivel usuario", (key) => {
     expect(settings[key]?.scope).toBe("application");
   });

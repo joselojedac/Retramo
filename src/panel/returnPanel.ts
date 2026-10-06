@@ -172,11 +172,7 @@ export function renderBody(session: Session, summaryPending: boolean, t: PanelSt
   if (session.editor.activeFile) {
     const line = session.editor.activeLine;
     const label = line ? `${session.editor.activeFile}:${line}` : session.editor.activeFile;
-    let html = `<p>${fileLink(session.editor.activeFile, line, label)}</p>`;
-    if (session.editor.activeSelection) {
-      html += `<p class="muted"><code>${escape(session.editor.activeSelection)}</code></p>`;
-    }
-    parts.push(section("active", t.youWereIn, html));
+    parts.push(section("active", t.youWereIn, `<p>${fileLink(session.editor.activeFile, line, label)}</p>`));
   }
 
   // 4. Archivos modificados sin commitear

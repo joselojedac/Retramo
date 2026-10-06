@@ -12,7 +12,6 @@ export interface Session {
   editor: {
     activeFile?: string; // ruta relativa al workspace
     activeLine?: number;
-    activeSelection?: string; // máximo 200 caracteres, solo si el usuario lo activó
     openFiles: string[]; // rutas relativas, orden de pestañas
   };
   git?: {
@@ -47,21 +46,8 @@ export interface SessionIndex {
   sessions: SessionIndexEntry[]; // más reciente primero
 }
 
-export const MAX_SELECTION_CHARS = 200;
 export const MAX_TERMINAL_COMMANDS = 10;
 export const HISTORY_LIMIT = 20;
-
-/** Recorta una selección al máximo permitido y descarta selecciones vacías. */
-export function clampSelection(text: string | undefined): string | undefined {
-  if (text === undefined) {
-    return undefined;
-  }
-  const trimmed = text.trim();
-  if (trimmed.length === 0) {
-    return undefined;
-  }
-  return trimmed.length > MAX_SELECTION_CHARS ? trimmed.slice(0, MAX_SELECTION_CHARS) : trimmed;
-}
 
 export function toIndexEntry(session: Session): SessionIndexEntry {
   const entry: SessionIndexEntry = {

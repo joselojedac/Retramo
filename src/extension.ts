@@ -36,11 +36,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       return undefined;
     }
     const root = folder.uri.fsPath;
-    const captureSelection = config().get<boolean>("captureSelection", false);
     const session = await captureSession(
       { trigger, note, workspace: { name: folder.name, rootPath: root } },
       {
-        editor: () => captureEditor(root, captureSelection),
+        editor: () => captureEditor(root),
         git: () => captureGit(root),
         terminal: () => terminal.capture(),
       },

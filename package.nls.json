@@ -6,8 +6,8 @@
   "command.openData": "Open data folder",
   "command.setApiKey": "Set API key for summaries",
   "config.idleMinutes": "Minutes without activity before a session is saved automatically. Minimum 5.",
-  "config.captureSelection": "Save the selected text in the active editor (up to 200 characters). Off by default.",
   "config.summary.provider": "Provider for the AI summary. With \"none\", nothing is sent anywhere.",
   "config.summary.ollamaEndpoint": "Ollama (or compatible) endpoint for the local summary.",
-  "config.telemetry": "Once a week, send how many times you used \"I'm back\". Just the number."
+  "config.telemetry": "Once a week, send how many times you used \"I'm back\". Just the number.",
+  "capabilities.untrustedWorkspaces": "Retramo runs git inside the repository, and a repository's configuration can run commands. Like VS Code's own Git extension, it only runs in trusted workspaces."
 }
