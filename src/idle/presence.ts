@@ -18,7 +18,11 @@
  * - El cambio de rango visible es presencia solo si ninguna señal no humana
  *   aparece en la ventana de `scrollWindowMs` antes o después: así cuenta la
  *   rueda del mouse y no un archivo que abrió un agente.
- * - Ganar el foco de la ventana es presencia.
+ * - La ventana pasa a `active` (VS Code lo marca con cualquier tecla o clic
+ *   en la ventana, incluida la terminal) o gana el foco: presencia. Un agente
+ *   no lo mueve. Ojo: a los ~60 s sin interacción VS Code dispara el mismo
+ *   evento con `active: false` y `focused: true`; eso NO es presencia, por
+ *   eso solo cuentan las transiciones a `true`.
  * - Un comando en la terminal activa, con la ventana enfocada, es presencia.
  * - Backspace y Enter reportan `undefined`: no cuentan. Nadie pasa 20
  *   minutos escribiendo sin una letra ni una flecha.
@@ -29,6 +33,8 @@ export interface PresenceOptions {
   onPresence: () => void;
   now?: () => number;
   scrollWindowMs?: number;
+  /** Estado de la ventana al arrancar. */
+  initialWindow?: { focused: boolean; active: boolean };
 }
 
 export const SCROLL_WINDOW_MS = 500;
@@ -37,12 +43,14 @@ export class PresenceFilter {
   private lastNonHumanAt = Number.NEGATIVE_INFINITY;
   private pendingScroll: { at: number; timer: ReturnType<typeof setTimeout> } | undefined;
   private disposed = false;
+  private window: { focused: boolean; active: boolean };
   private readonly now: () => number;
   private readonly windowMs: number;
 
   constructor(private readonly options: PresenceOptions) {
     this.now = options.now ?? Date.now;
     this.windowMs = options.scrollWindowMs ?? SCROLL_WINDOW_MS;
+    this.window = { ...(options.initialWindow ?? { focused: true, active: true }) };
   }
 
   selection(kind: SelectionKind, windowFocused: boolean): void {
@@ -83,8 +91,11 @@ export class PresenceFilter {
     }
   }
 
-  windowFocus(focused: boolean): void {
-    if (focused) {
+  /** Solo las transiciones a `true` son presencia. */
+  windowState(focused: boolean, active: boolean): void {
+    const gained = (focused && !this.window.focused) || (active && !this.window.active);
+    this.window = { focused, active };
+    if (gained) {
       this.presence();
     }
   }

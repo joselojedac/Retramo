@@ -72,9 +72,23 @@ describe("PresenceFilter", () => {
 
   it("ganar el foco de la ventana es presencia; perderlo no", () => {
     const { onPresence, filter } = setup();
-    filter.windowFocus(false);
+    filter.windowState(false, false);
     expect(onPresence).not.toHaveBeenCalled();
-    filter.windowFocus(true);
+    filter.windowState(true, false);
+    expect(onPresence).toHaveBeenCalledTimes(1);
+  });
+
+  it("la ventana que queda inactiva con el foco puesto NO es presencia (el evento de los ~60 s)", () => {
+    const { onPresence, filter } = setup();
+    filter.windowState(true, false); // medido: focused=true, active=false, sin que nadie toque nada
+    filter.windowState(true, false);
+    expect(onPresence).not.toHaveBeenCalled();
+  });
+
+  it("escribir en la terminal (active pasa a true) es presencia", () => {
+    const { onPresence, filter } = setup();
+    filter.windowState(true, false); // inactiva
+    filter.windowState(true, true); // medido: una tecla en la terminal
     expect(onPresence).toHaveBeenCalledTimes(1);
   });
 
@@ -100,6 +114,17 @@ describe("PresenceFilter", () => {
 describe("inactividad con un agente trabajando", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
+
+  it("una ventana enfocada pero sin tocar no reinicia el temporizador", async () => {
+    const onIdle = vi.fn();
+    const idle = new IdleDetector({ getIdleMs: () => 5 * 60_000, onIdle });
+    const filter = new PresenceFilter({ onPresence: () => idle.activity() });
+    idle.start();
+    await vi.advanceTimersByTimeAsync(60_000);
+    filter.windowState(true, false); // lo que VS Code manda a los ~60 s
+    await vi.advanceTimersByTimeAsync(4 * 60_000);
+    expect(onIdle).toHaveBeenCalledTimes(1);
+  });
 
   it("las ediciones de un agente no reinician el temporizador", async () => {
     const onIdle = vi.fn();

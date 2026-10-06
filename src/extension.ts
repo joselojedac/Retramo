@@ -142,7 +142,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Solo la actividad humana cuenta como presencia (ver idle/presence.ts).
   // onDidChangeTextDocument NO cuenta: lo disparan agentes y formateadores.
-  const presence = new PresenceFilter({ onPresence: () => away.presence() });
+  const presence = new PresenceFilter({
+    onPresence: () => away.presence(),
+    initialWindow: { focused: vscode.window.state.focused, active: vscode.window.state.active },
+  });
   context.subscriptions.push({ dispose: () => presence.dispose() });
   const focused = () => vscode.window.state.focused;
   context.subscriptions.push(
@@ -157,8 +160,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         presence.nonHuman();
       }
     }),
-    // Perder el foco NO dispara nada: el temporizador sigue corriendo.
-    vscode.window.onDidChangeWindowState((state) => presence.windowFocus(state.focused)),
+    // Perder el foco o quedar inactiva NO dispara nada: el temporizador sigue.
+    vscode.window.onDidChangeWindowState((state) => presence.windowState(state.focused, state.active)),
     vscode.window.onDidStartTerminalShellExecution((e) =>
       presence.shellExecution(e.terminal === vscode.window.activeTerminal, focused()),
     ),
