@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createLogger, Logger } from "./log";
 import { Session, SessionStore, HISTORY_LIMIT } from "./session";
+import { MAX_INTENT_CHARS } from "./session/model";
 import { captureSession } from "./capture";
 import { captureEditor } from "./capture/editor";
 import { captureGit } from "./capture/git";
@@ -27,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // --- Captura -------------------------------------------------------------
 
-  async function leave(trigger: "manual" | "idle", note?: string): Promise<Session | undefined> {
+  async function leave(trigger: "manual" | "idle", intent?: string): Promise<Session | undefined> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     if (!folder) {
       log.warn("leave: no hay carpeta abierta, no se guarda sesión");
@@ -38,7 +39,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }
     const root = folder.uri.fsPath;
     const session = await captureSession(
-      { trigger, note, workspace: { name: folder.name, rootPath: root } },
+      { trigger, intent, workspace: { name: folder.name, rootPath: root } },
       {
         editor: () => captureEditor(root),
         git: () => captureGit(root),
@@ -112,7 +113,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     void (async () => {
       try {
         const text = await provider.summarize(session);
-        session.summary = { text, provider: provider.name, generatedAt: new Date().toISOString() };
+        session.summary = { text, provider: provider.name, includedDiffs: false, generatedAt: new Date().toISOString() };
         await store.save(session);
         panel.updateSummary(session.id, text);
       } catch (error) {
@@ -130,16 +131,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.commands.registerCommand("retramo.leave", async () => {
-      const note = await vscode.window.showInputBox({
-        placeHolder: vscode.l10n.t("What were you doing? (optional)"),
+      const intent = await vscode.window.showInputBox({
+        placeHolder: vscode.l10n.t("What were you in the middle of? (optional)"),
         prompt: vscode.l10n.t("Press Enter with no text to skip"),
         ignoreFocusOut: true,
+        validateInput: (value) =>
+          value.trim().length > MAX_INTENT_CHARS
+            ? vscode.l10n.t("Keep it under {0} characters", MAX_INTENT_CHARS)
+            : undefined,
       });
-      if (note === undefined) {
+      if (intent === undefined) {
         return; // Escape: cancelado
       }
       try {
-        const session = await leave("manual", note);
+        const session = await leave("manual", intent);
         if (session) {
           vscode.window.setStatusBarMessage(vscode.l10n.t("Retramo: session saved"), 3000);
         }
@@ -169,7 +174,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const picked = await vscode.window.showQuickPick(
         entries.map((entry) => ({
-          label: entry.note ?? entry.activeFile ?? vscode.l10n.t("(no note)"),
+          label: entry.intent ?? entry.activeFile ?? vscode.l10n.t("(no note)"),
           description: `${entry.workspaceName} · ${entry.trigger === "manual" ? vscode.l10n.t("manual") : vscode.l10n.t("automatic")}`,
           detail: new Date(entry.createdAt).toLocaleString(vscode.env.language),
           id: entry.id,

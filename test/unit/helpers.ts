@@ -10,6 +10,7 @@ export async function tempDir(): Promise<string> {
 
 export function makeSession(overrides: Partial<Session> = {}): Session {
   return {
+    schemaVersion: 2,
     id: ulid(),
     createdAt: new Date().toISOString(),
     trigger: "manual",

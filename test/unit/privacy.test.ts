@@ -29,7 +29,7 @@ describe("privacidad", () => {
     try {
       const store = new SessionStore(dir);
       const session = await captureSession(
-        { trigger: "manual", note: "nota", workspace: { name: "w", rootPath: "/w" } },
+        { trigger: "manual", intent: "nota", workspace: { name: "w", rootPath: "/w" } },
         {
           editor: async () => ({ openFiles: ["a.ts"], activeFile: "a.ts", activeLine: 1 }),
           git: async () => ({ branch: "main", modifiedFiles: ["a.ts"] }),

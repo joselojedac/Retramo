@@ -8,6 +8,7 @@ import {
   toIndexEntry,
 } from "./model";
 import { isUlid } from "./ulid";
+import { migrateSession } from "./migrate";
 import { Logger, silentLogger } from "../log";
 
 /**
@@ -46,7 +47,7 @@ export class SessionStore {
     const index = await this.readIndex();
     const others = index.sessions.filter((entry) => entry.id !== session.id);
     const sessions = [toIndexEntry(session), ...others].sort(byCreatedAtDesc);
-    await this.writeIndex({ version: 1, sessions });
+    await this.writeIndex({ version: 2, sessions });
   }
 
   async get(id: string): Promise<Session | undefined> {
@@ -55,7 +56,11 @@ export class SessionStore {
     }
     try {
       const raw = await fs.readFile(this.sessionPath(id), "utf8");
-      return JSON.parse(raw) as Session;
+      const session = migrateSession(JSON.parse(raw));
+      if (!session) {
+        this.log.warn(`store: la sesión ${id} no tiene un formato válido`);
+      }
+      return session;
     } catch (error) {
       if (isNotFound(error)) {
         return undefined;
@@ -84,10 +89,11 @@ export class SessionStore {
   async readIndex(): Promise<SessionIndex> {
     try {
       const raw = await fs.readFile(this.indexPath, "utf8");
-      const parsed = JSON.parse(raw) as Partial<SessionIndex>;
-      if (parsed.version === 1 && Array.isArray(parsed.sessions)) {
-        return { version: 1, sessions: parsed.sessions };
+      const parsed = JSON.parse(raw) as { version?: number; sessions?: unknown };
+      if (parsed.version === 2 && Array.isArray(parsed.sessions)) {
+        return { version: 2, sessions: parsed.sessions as SessionIndexEntry[] };
       }
+      // El índice v1 tenía `note`: se reconstruye desde las sesiones, que se migran al leer.
       this.log.warn("store: índice con formato desconocido, reconstruyendo");
     } catch (error) {
       if (!isNotFound(error)) {
@@ -117,7 +123,7 @@ export class SessionStore {
       }
     }
     sessions.sort(byCreatedAtDesc);
-    const index: SessionIndex = { version: 1, sessions };
+    const index: SessionIndex = { version: 2, sessions };
     try {
       await fs.mkdir(this.dir, { recursive: true });
       await this.writeIndex(index);

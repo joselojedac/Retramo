@@ -20,7 +20,7 @@ describe("SessionStore", () => {
   });
 
   it("escribe y lee una sesión", async () => {
-    const session = makeSession({ note: "arreglando el login" });
+    const session = makeSession({ intent: "arreglando el login" });
     await store.save(session);
     const read = await store.get(session.id);
     expect(read).toEqual(session);
@@ -43,15 +43,15 @@ describe("SessionStore", () => {
     const base = Date.now();
     for (let i = 0; i < 25; i++) {
       await store.save(
-        makeSession({ id: ulid(base + i), createdAt: new Date(base + i).toISOString(), note: `n${i}` }),
+        makeSession({ id: ulid(base + i), createdAt: new Date(base + i).toISOString(), intent: `n${i}` }),
       );
     }
     const list = await store.list();
     expect(list).toHaveLength(HISTORY_LIMIT);
-    expect(list[0].note).toBe("n24");
-    expect(list[19].note).toBe("n5");
+    expect(list[0].intent).toBe("n24");
+    expect(list[19].intent).toBe("n5");
     const latest = await store.latest();
-    expect(latest?.note).toBe("n24");
+    expect(latest?.intent).toBe("n24");
   });
 
   it("filtra por workspace", async () => {
@@ -101,7 +101,7 @@ describe("SessionStore", () => {
 
     await fs.rm(store.indexPath);
     expect((await store.list()).map((e) => e.id)).toEqual([b.id, a.id]);
-    expect(JSON.parse(await fs.readFile(store.indexPath, "utf8")).version).toBe(1);
+    expect(JSON.parse(await fs.readFile(store.indexPath, "utf8")).version).toBe(2);
   });
 
   it("ignora archivos ajenos en la carpeta de sesiones al reconstruir", async () => {

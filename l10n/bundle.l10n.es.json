@@ -1,6 +1,7 @@
 {
   "Retramo: open a folder to save a session": "Retramo: abrí una carpeta para guardar una sesión",
-  "What were you doing? (optional)": "¿Qué estabas haciendo? (opcional)",
+  "What were you in the middle of? (optional)": "¿En qué estabas? (opcional)",
+  "Keep it under {0} characters": "Máximo {0} caracteres",
   "Press Enter with no text to skip": "Enter vacío para saltear",
   "Retramo: session saved": "Retramo: sesión guardada",
   "Retramo: could not save (see log)": "Retramo: no se pudo guardar (ver log)",

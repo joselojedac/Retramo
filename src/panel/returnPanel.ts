@@ -155,8 +155,8 @@ export function renderBody(session: Session, summaryPending: boolean, t: PanelSt
   parts.push(`<h1>${escape(t.title)}</h1>`);
 
   // 1. Nota
-  if (session.note) {
-    parts.push(`<p class="note">${escape(session.note)}</p>`);
+  if (session.intent) {
+    parts.push(`<p class="note">${escape(session.intent)}</p>`);
   }
 
   // 2. Resumen con IA
