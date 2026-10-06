@@ -6,7 +6,7 @@ It's made for people with ADHD, and for anyone who works alongside AI agents. Yo
 
 Two actions, no setup to get started, and everything stays on your machine.
 
-![Retramo: "I'm leaving" saves where you were; "I'm back" takes you right back to that line](media/demo.gif)
+![Retramo: you leave, an agent commits a fix while you're away, and "I'm back" shows exactly what changed, down to the diff](media/demo.gif)
 
 ## Two actions
 
