@@ -225,6 +225,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       log.info("summary: el usuario confirmó includeDiffs");
     } else {
       await config().update("summary.includeDiffs", false, vscode.ConfigurationTarget.Global);
+      // La pantalla de ajustes abierta no redibuja la fila que el usuario
+      // acaba de tocar: seguiría mostrando el checkbox tildado aunque el valor
+      // ya sea false. Mostrar el ajuste de nuevo la obliga a redibujarse.
+      await vscode.commands.executeCommand("workbench.action.openSettings", "retramo.summary.includeDiffs");
       log.info("summary: includeDiffs no confirmado, se vuelve a false");
     }
   }
