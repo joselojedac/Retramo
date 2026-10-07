@@ -1,25 +1,82 @@
 import { Session } from "../session/model";
+import type { AwayChanges } from "../changes/compute";
 
 export interface SummaryProvider {
   name: string; // "byok:openai" | "byok:anthropic" | "local:ollama"
-  summarize(session: Session): Promise<string>;
+  summarize(payload: SummaryPayload): Promise<string>;
 }
 
 export type SummaryProviderKind = "none" | "openai" | "anthropic" | "ollama";
 
 /**
- * Lo único que se envía al proveedor es esto: el JSON de la sesión sin el
- * resumen previo. Como el modelo de sesión no contiene contenido de archivos
- * ni diffs, no se envía código.
+ * Lo único que se envía al proveedor. Se arma campo por campo a propósito:
+ * lo que no está acá no sale.
+ *
+ * Nunca viaja: la línea de base (hashes de los no trackeados, snapshot, head,
+ * errores), rutas absolutas (raíz del workspace, cwd de la terminal), ids ni
+ * el resumen anterior. Sin `diffs`, no hay código: solo nombres, estados y
+ * asuntos de commits. `diffs` solo existe con `retramo.summary.includeDiffs`.
  */
-export function sessionForPrompt(session: Session): Omit<Session, "summary"> {
-  const { summary: _summary, ...rest } = session;
-  void _summary;
-  return rest;
+export interface SummaryPayload {
+  intent?: string;
+  workspace: string;
+  trigger: Session["trigger"];
+  editor: { activeFile?: string; activeLine?: number; openFiles: string[] };
+  git?: { branch: string; uncommittedFiles: string[]; lastCommitMessage?: string };
+  recentTerminalCommands?: string[];
+  whileAway?: {
+    minutes: number;
+    branchChanged?: { from: string; to: string };
+    historyRewritten?: boolean;
+    newCommits: { subject: string; author: string }[];
+    changedFiles: { path: string; status: string }[];
+    moreFiles: number;
+  };
+  diffs?: string;
 }
 
-export function buildPrompt(template: string, session: Session): string {
-  return template.replace("{session_json}", JSON.stringify(sessionForPrompt(session), null, 2));
+export function buildPayload(session: Session, changes?: AwayChanges, diffs?: string): SummaryPayload {
+  const payload: SummaryPayload = {
+    workspace: session.workspace.name,
+    trigger: session.trigger,
+    editor: {
+      activeFile: session.editor.activeFile,
+      activeLine: session.editor.activeLine,
+      openFiles: session.editor.openFiles,
+    },
+  };
+  if (session.intent) {
+    payload.intent = session.intent;
+  }
+  if (session.git) {
+    payload.git = {
+      branch: session.git.branch,
+      uncommittedFiles: session.git.modifiedFiles,
+      lastCommitMessage: session.git.lastCommitMessage,
+    };
+  }
+  if (session.terminal && session.terminal.recentCommands.length > 0) {
+    payload.recentTerminalCommands = session.terminal.recentCommands;
+  }
+  if (changes) {
+    payload.whileAway = {
+      minutes: changes.minutesAway,
+      branchChanged: changes.branchChanged,
+      historyRewritten: changes.historyRewritten,
+      newCommits: changes.newCommits.map((c) => ({ subject: c.subject, author: c.author })),
+      changedFiles: changes.files.map((f) => ({ path: f.path, status: f.status })),
+      moreFiles: changes.overflow,
+    };
+  }
+  if (diffs) {
+    payload.diffs = diffs;
+  }
+  return payload;
+}
+
+export function buildPrompt(template: string, payload: SummaryPayload): string {
+  // Reemplazo con función: un "$&" en los datos no se interpreta.
+  return template.replace("{payload_json}", () => JSON.stringify(payload, null, 2));
 }
 
 export function cleanSummary(text: string): string {

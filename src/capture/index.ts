@@ -1,4 +1,4 @@
-import { Session, SessionTrigger } from "../session/model";
+import { clampIntent, SCHEMA_VERSION, Session, SessionTrigger } from "../session/model";
 import { ulid } from "../session/ulid";
 import type { Logger } from "../log";
 
@@ -15,7 +15,7 @@ export interface Capturers {
 
 export interface CaptureInput {
   trigger: SessionTrigger;
-  note?: string;
+  intent?: string;
   workspace: Session["workspace"];
 }
 
@@ -33,15 +33,16 @@ export async function captureSession(
   ]);
 
   const session: Session = {
+    schemaVersion: SCHEMA_VERSION,
     id: ulid(),
     createdAt: new Date().toISOString(),
     trigger: input.trigger,
     workspace: input.workspace,
     editor: settled(editor) ?? EMPTY_EDITOR,
   };
-  const note = input.note?.trim();
-  if (note) {
-    session.note = note;
+  const intent = clampIntent(input.intent);
+  if (intent) {
+    session.intent = intent;
   }
   const gitValue = settled(git);
   if (gitValue) {

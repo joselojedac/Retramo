@@ -1,9 +1,9 @@
-import { Session } from "../session/model";
 import {
   buildPrompt,
   cleanSummary,
   describeHttpError,
   SummaryError,
+  SummaryPayload,
   SummaryProvider,
 } from "./provider";
 import type { Logger } from "../log";
@@ -26,14 +26,14 @@ export class OllamaProvider implements SummaryProvider {
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
-  async summarize(session: Session): Promise<string> {
+  async summarize(payload: SummaryPayload): Promise<string> {
     const model = await this.resolveModel();
     const response = await this.fetchImpl(`${this.base()}/api/generate`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         model,
-        prompt: buildPrompt(this.promptTemplate, session),
+        prompt: buildPrompt(this.promptTemplate, payload),
         stream: false,
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

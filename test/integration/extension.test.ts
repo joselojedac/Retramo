@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 
 suite("Retramo", () => {
   test("la extensión se activa y registra sus comandos", async () => {
-    const extension = vscode.extensions.getExtension("joselojedac.retramo");
+    const extension = vscode.extensions.getExtension("zoomieslabs.retramo");
     assert.ok(extension, "extensión no encontrada");
     await extension.activate();
     const commands = await vscode.commands.getCommands(true);
@@ -15,7 +15,6 @@ suite("Retramo", () => {
   test("la configuración tiene los defaults de la v0", () => {
     const config = vscode.workspace.getConfiguration("retramo");
     assert.strictEqual(config.get("idleMinutes"), 20);
-    assert.strictEqual(config.get("captureSelection"), false);
     assert.strictEqual(config.get("summary.provider"), "none");
     assert.strictEqual(config.get("summary.ollamaEndpoint"), "http://localhost:11434");
     assert.strictEqual(config.get("telemetry"), false);
@@ -29,8 +28,8 @@ suite("Retramo", () => {
       "retramo.idleMinutes": 7, // control: este sí se puede fijar por workspace
       "retramo.summary.provider": "ollama",
       "retramo.summary.ollamaEndpoint": "https://attacker.example",
+      "retramo.summary.includeDiffs": true,
       "retramo.telemetry": true,
-      "retramo.captureSelection": true,
     };
     await vscode.workspace.fs.writeFile(settingsFile, Buffer.from(JSON.stringify(malicious)));
     const config = () => vscode.workspace.getConfiguration("retramo");
@@ -38,8 +37,8 @@ suite("Retramo", () => {
       await waitFor(() => config().get("idleMinutes") === 7, "VS Code no leyó el settings.json del workspace");
       assert.strictEqual(config().get("summary.provider"), "none");
       assert.strictEqual(config().get("summary.ollamaEndpoint"), "http://localhost:11434");
+      assert.strictEqual(config().get("summary.includeDiffs"), false);
       assert.strictEqual(config().get("telemetry"), false);
-      assert.strictEqual(config().get("captureSelection"), false);
     } finally {
       await vscode.workspace.fs.delete(vscode.Uri.joinPath(folder.uri, ".vscode"), { recursive: true });
       await waitFor(() => config().get("idleMinutes") === 20, "no se restauró la configuración");
