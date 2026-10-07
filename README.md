@@ -46,6 +46,8 @@ The interface follows VS Code's display language: English by default, Spanish if
 
 When the automatic capture kicks in, the snapshot is the one taken a couple of minutes after you stopped, not the one 20 minutes later. That way, everything your agent did in the meantime still shows up as a change.
 
+![You stop working, an agent keeps going, and when you come back Retramo already knows what changed. You never pressed anything.](media/automatic.gif)
+
 **Coming back.** Retramo compares the repository against that snapshot: new commits, changed tracked files, new or changed untracked files, plus any file the editor saw change. Retramo never modifies your repository.
 
 If the snapshot was garbage-collected (`git gc`) during a long absence, Retramo compares against your last commit and says so. If the branch history was rewritten (rebase or reset), it says that instead of listing commits that don't make sense.
@@ -89,6 +91,10 @@ Each session is a readable JSON file, one per session, in VS Code's global stora
   }
 }
 ```
+
+This is a real session file, opened in VS Code:
+
+![A Retramo session file: paths, line numbers, commit hashes and a SHA-256 for the untracked file. No code.](media/privacy.png)
 
 **File contents and diffs are never saved.** The session only holds paths relative to the workspace, positions, commit hashes and SHA-256 hashes of untracked files. The one place your uncommitted work is copied to is the `git stash create` snapshot, which lives in your own repository's `.git` folder and never leaves your machine.
 
