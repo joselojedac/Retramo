@@ -1,4 +1,4 @@
-import { Baseline, clampIntent, MAX_UNTRACKED, MAX_WATCHED_PATHS, Session, SCHEMA_VERSION } from "./model";
+import { AwayChanges, Baseline, clampIntent, MAX_UNTRACKED, MAX_WATCHED_PATHS, Session, SCHEMA_VERSION } from "./model";
 import { isObjectId } from "../git/objectId";
 
 /**
@@ -64,6 +64,10 @@ export function migrateSession(raw: unknown): Session | undefined {
     if (typeof raw.away.endedAt === "string") {
       session.away.endedAt = raw.away.endedAt;
     }
+    const changes = migrateChanges(raw.away.changes);
+    if (changes) {
+      session.away.changes = changes;
+    }
   }
   if (isRecord(raw.summary) && typeof raw.summary.text === "string" && typeof raw.summary.provider === "string") {
     session.summary = {
@@ -116,6 +120,41 @@ function migrateBaseline(value: unknown): Baseline | undefined {
     baseline.error = value.error;
   }
   return baseline;
+}
+
+const STATUSES = new Set(["modified", "added", "deleted", "renamed"]);
+const SOURCES = new Set(["git", "untracked", "watcher"]);
+const MAX_STORED_FILES = 200;
+const MAX_STORED_COMMITS = 20;
+
+function migrateChanges(value: unknown): AwayChanges | undefined {
+  if (!isRecord(value) || typeof value.minutesAway !== "number" || !Array.isArray(value.files) || !Array.isArray(value.newCommits)) {
+    return undefined;
+  }
+  const changes: AwayChanges = {
+    minutesAway: Math.max(0, Math.floor(value.minutesAway)),
+    newCommits: value.newCommits
+      .filter(isRecord)
+      .filter((c) => isObjectId(c.hash) && typeof c.subject === "string" && typeof c.author === "string")
+      .slice(0, MAX_STORED_COMMITS)
+      .map((c) => ({ hash: c.hash as string, subject: c.subject as string, author: c.author as string })),
+    files: value.files
+      .filter(isRecord)
+      .filter((f) => typeof f.path === "string" && STATUSES.has(f.status as string) && SOURCES.has(f.source as string))
+      .slice(0, MAX_STORED_FILES)
+      .map((f) => ({ path: f.path as string, status: f.status as AwayChanges["files"][number]["status"], source: f.source as AwayChanges["files"][number]["source"] })),
+    overflow: typeof value.overflow === "number" && value.overflow > 0 ? Math.floor(value.overflow) : 0,
+  };
+  if (isRecord(value.branchChanged) && typeof value.branchChanged.from === "string" && typeof value.branchChanged.to === "string") {
+    changes.branchChanged = { from: value.branchChanged.from, to: value.branchChanged.to };
+  }
+  if (value.baselineLost === true) {
+    changes.baselineLost = true;
+  }
+  if (value.historyRewritten === true) {
+    changes.historyRewritten = true;
+  }
+  return changes;
 }
 
 function strings(value: unknown): string[] {

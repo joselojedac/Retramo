@@ -127,7 +127,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const repoRoot = baseline ? path.resolve(session.workspace.rootPath, baseline.repoRoot) : session.workspace.rootPath;
     const api = await getGitApi().catch(() => undefined);
     const git = api && baseline ? createGitRunner(api.git.path, repoRoot) : undefined;
-    const changes = await computeAwayChanges({ session, git, repoRoot });
+    // Una ausencia ya cerrada se muestra como quedó al volver, no contra hoy.
+    let changes = session.away?.endedAt ? session.away.changes : undefined;
+    if (!changes) {
+      changes = await computeAwayChanges({ session, git, repoRoot });
+      if (session.away?.endedAt) {
+        session.away.changes = changes;
+        await store.save(session).catch((error) => log.error("return: no se pudieron guardar los cambios", error));
+      }
+    }
     const ref = baseline && (changes.baselineLost ? baseline.head : (baseline.snapshot ?? baseline.head));
     return {
       changes,

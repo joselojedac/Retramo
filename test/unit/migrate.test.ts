@@ -94,3 +94,51 @@ describe("hashes de la línea de base", () => {
     expect(migrateSession({ ...v1, schemaVersion: 2, baseline })!.baseline).toEqual(baseline);
   });
 });
+
+describe("cambios congelados al volver", () => {
+  const away = (changes: unknown) => ({
+    ...v1,
+    schemaVersion: 2,
+    away: { startedAt: v1.createdAt, endedAt: v1.createdAt, watchedPaths: [], overflow: 0, changes },
+  });
+
+  it("se conservan tal cual si son válidos", () => {
+    const changes = {
+      minutesAway: 47,
+      branchChanged: { from: "fix/x", to: "main" },
+      newCommits: [{ hash: SHA1, subject: "Add CI workflow", author: "Ana" }],
+      files: [{ path: "src/a.ts", status: "modified", source: "git" }],
+      overflow: 3,
+      historyRewritten: true,
+    };
+    expect(migrateSession(away(changes))!.away?.changes).toEqual(changes);
+  });
+
+  it("descarta commits con hash inválido y archivos con estado o fuente desconocidos", () => {
+    const changes = migrateSession(
+      away({
+        minutesAway: 5,
+        newCommits: [
+          { hash: "--output=/tmp/x", subject: "malo", author: "x" },
+          { hash: SHA1, subject: "bueno", author: "Ana" },
+        ],
+        files: [
+          { path: "a", status: "exploded", source: "git" },
+          { path: "b", status: "added", source: "magic" },
+          { path: "c", status: "deleted", source: "watcher" },
+        ],
+        overflow: -2,
+      }),
+    )!.away?.changes;
+    expect(changes?.newCommits.map((c) => c.subject)).toEqual(["bueno"]);
+    expect(changes?.files.map((f) => f.path)).toEqual(["c"]);
+    expect(changes?.overflow).toBe(0);
+  });
+
+  it("una forma inválida se ignora sin romper la sesión", () => {
+    const session = migrateSession(away({ minutesAway: "mucho" }))!;
+    expect(session.away?.changes).toBeUndefined();
+    expect(session.away?.endedAt).toBe(v1.createdAt);
+  });
+});
+

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
-import { Session } from "../session/model";
+import { AwayChanges, ChangeSource, ChangeStatus, Session } from "../session/model";
 import { GitRunner, splitNul } from "../git/exec";
 import { isObjectId } from "../git/objectId";
 import { hashUntracked, LARGE, LINK } from "../baseline/snapshot";
@@ -9,21 +9,7 @@ import { hashUntracked, LARGE, LINK } from "../baseline/snapshot";
 export const MAX_NEW_COMMITS = 20;
 export const MAX_CHANGED_FILES = 200;
 
-export type ChangeStatus = "modified" | "added" | "deleted" | "renamed";
-export type ChangeSource = "git" | "untracked" | "watcher";
-
-export interface AwayChanges {
-  minutesAway: number;
-  branchChanged?: { from: string; to: string };
-  newCommits: { hash: string; subject: string; author: string }[];
-  /** Rutas relativas a la raíz del repo (o al workspace si no hay línea de base). */
-  files: { path: string; status: ChangeStatus; source: ChangeSource }[];
-  overflow: number;
-  /** El snapshot ya no existe (git gc): se comparó contra el último commit. */
-  baselineLost?: boolean;
-  /** El commit de la línea de base ya no es ancestro de HEAD (rebase, reset). */
-  historyRewritten?: boolean;
-}
+export type { AwayChanges, ChangeSource, ChangeStatus } from "../session/model";
 
 export interface ComputeInput {
   session: Session;

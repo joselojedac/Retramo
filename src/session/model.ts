@@ -32,6 +32,12 @@ export interface Session {
     watchedPaths: string[]; // rutas tocadas durante la ausencia, en orden, máximo 200
     overflow: number; // rutas descartadas por el tope
     endedAt?: string; // cuándo se detectó el regreso
+    /**
+     * "Mientras no estabas", congelado al volver. Así, abrir la sesión desde
+     * el historial muestra lo que cambió durante ESA ausencia, no contra hoy.
+     * Solo nombres, estados y asuntos de commits: lo mismo que muestra el panel.
+     */
+    changes?: AwayChanges;
   };
   summary?: {
     text: string;
@@ -53,6 +59,22 @@ export interface Baseline {
   untracked: Record<string, string>; // ruta relativa al repo -> sha256 o "large"
   capturedAt: string;
   error?: string;
+}
+
+export type ChangeStatus = "modified" | "added" | "deleted" | "renamed";
+export type ChangeSource = "git" | "untracked" | "watcher";
+
+export interface AwayChanges {
+  minutesAway: number;
+  branchChanged?: { from: string; to: string };
+  newCommits: { hash: string; subject: string; author: string }[];
+  /** Rutas relativas a la raíz del repo (o al workspace si no hay línea de base). */
+  files: { path: string; status: ChangeStatus; source: ChangeSource }[];
+  overflow: number;
+  /** El snapshot ya no existe (git gc): se comparó contra el último commit. */
+  baselineLost?: boolean;
+  /** El commit de la línea de base ya no es ancestro de HEAD (rebase, reset). */
+  historyRewritten?: boolean;
 }
 
 /** Entrada del índice: lo justo para listar sin abrir cada archivo. */
