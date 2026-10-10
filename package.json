@@ -5,9 +5,19 @@
   "version": "0.2.0",
   "publisher": "zoomieslabs",
   "license": "MIT",
+  "author": {
+    "name": "ZoomiesLabs",
+    "email": "hello@zoomieslabs.dev",
+    "url": "https://zoomieslabs.dev"
+  },
+  "homepage": "https://github.com/zoomieslabs/Retramo#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/joselojedac/Retramo"
+    "url": "https://github.com/zoomieslabs/Retramo"
+  },
+  "bugs": {
+    "url": "https://github.com/zoomieslabs/Retramo/issues",
+    "email": "hello@zoomieslabs.dev"
   },
   "engines": {
     "vscode": "^1.93.0"
