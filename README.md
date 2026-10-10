@@ -129,7 +129,7 @@ If you set `retramo.summary.provider` to `openai`, `anthropic` or `ollama`, open
 
 The summary isn't generated for a session from a different project that you didn't pick yourself. That happens when you press **I'm back** in a folder with no sessions of its own.
 
-- `openai` and `anthropic` use your own key. It's stored in VS Code's secret storage (`context.secrets`), never in `settings.json`. Set it with `Retramo: Set API key for summaries`. With `anthropic`, a request declined by a safety classifier is retried server-side on the fallback model Anthropic recommends for that case.
+- `openai` and `anthropic` use your own key. It's stored in VS Code's secret storage (`context.secrets`), never in `settings.json`. Set it with `Retramo: Set API key for summaries`.
 - `ollama` uses the endpoint in `retramo.summary.ollamaEndpoint` (default `http://localhost:11434`) and the first model you have installed. Nothing leaves your network.
 
 With no key configured and no local endpoint, the option doesn't exist: nothing is shown.
@@ -209,7 +209,8 @@ Translations live in `package.nls.*.json` (commands and settings) and `l10n/bund
 
 ## Support
 
-- Bugs and ideas: [GitHub issues](https://github.com/zoomieslabs/Retramo/issues)
+- Ideas, questions and feedback: [GitHub Discussions](https://github.com/zoomieslabs/Retramo/discussions)
+- Bugs: [GitHub issues](https://github.com/zoomieslabs/Retramo/issues)
 - Anything else: **hello@zoomieslabs.dev**
 
 ## License
