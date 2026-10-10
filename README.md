@@ -1,4 +1,7 @@
-# Retramo
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zoomieslabs/Retramo/main/media/banner-dark.png">
+  <img alt="Retramo: pick up where you left off" src="https://raw.githubusercontent.com/zoomieslabs/Retramo/main/media/banner-light.png">
+</picture>
 
 When you come back after an interruption, Retramo tells you three things: what you were in the middle of, what changed while you were away, and what to review first.
 

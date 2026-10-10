@@ -1,6 +1,11 @@
 {
   "name": "retramo",
   "displayName": "Retramo",
+  "icon": "media/retramo-icon-256.png",
+  "galleryBanner": {
+    "color": "#0E1022",
+    "theme": "dark"
+  },
   "description": "%description%",
   "version": "0.2.0",
   "publisher": "zoomieslabs",
