@@ -11,6 +11,12 @@ Two actions, no setup to get started, and everything stays on your machine.
 
 ![Retramo: you leave, an agent commits a fix while you're away, and "I'm back" shows exactly what changed, down to the diff](media/demo.gif)
 
+## Install
+
+- **VS Code:** install it from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=zoomieslabs.retramo), or press `Ctrl+P` and run `ext install zoomieslabs.retramo`.
+- **VSCodium, Cursor, Windsurf and other editors that use Open VSX:** install it from [Open VSX](https://open-vsx.org/extension/zoomieslabs/retramo).
+- **Offline:** download the `.vsix` from the [latest release](https://github.com/zoomieslabs/Retramo/releases/latest) and run `Extensions: Install from VSIX...`.
+
 ## Two actions
 
 | Action | Command | Shortcut |
