@@ -166,6 +166,8 @@ This is all there is:
 - **Git is never run through a shell.** Retramo uses the same git binary as VS Code's Git extension, with `core.fsmonitor` disabled, without external diff tools or text conversion filters, and without taking the index lock, so it doesn't collide with an agent using git at the same time.
 - **Anything from the repository is data.** File names, branch names, commit messages and diffs are escaped before they're shown and never interpreted as code, and the summary prompt tells the model to treat them as data too.
 
+Found a security problem? Please email **hello@zoomieslabs.dev** instead of opening a public issue. See [SECURITY.md](SECURITY.md).
+
 ## Known limitations
 
 - **Leaving VS Code focused while you're away is fine**, but leaving it focused *and* touching the keyboard or mouse isn't: Retramo can't tell your cat from you.
@@ -196,6 +198,11 @@ Translations live in `package.nls.*.json` (commands and settings) and `l10n/bund
 - **v0.2** (this): what changed while you were away, agent-independent.
 - **Next**: reading AI agents' own session files, and a Go CLI that shares the session format.
 
+## Support
+
+- Bugs and ideas: [GitHub issues](https://github.com/zoomieslabs/Retramo/issues)
+- Anything else: **hello@zoomieslabs.dev**
+
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Made by [ZoomiesLabs](https://zoomieslabs.dev).
